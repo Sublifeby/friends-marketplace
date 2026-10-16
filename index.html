@@ -1,665 +1,618 @@
-<!DOCTYPE html>
-<html lang="ru" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Маркетплейс для своих</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        tg: {
-                            bg: '#18222d',
-                            card: '#242f3d',
-                            cardHover: '#2b3848',
-                            primary: '#2ea6ff',
-                            primaryHover: '#1a91fa',
-                            text: '#ffffff',
-                            hint: '#8a9ba8',
-                            border: '#314256',
-                            danger: '#ff5b5b'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body {
-            background-color: #18222d;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #18222d;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #314256;
-            border-radius: 4px;
-        }
-    </style>
-</head>
-<body class="bg-tg-bg text-tg-text min-h-screen flex flex-col pb-20">
-
-    <!-- Top Header -->
-    <header class="sticky top-0 z-40 bg-tg-card/90 backdrop-blur-md border-b border-tg-border px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-full bg-tg-primary/20 flex items-center justify-center text-tg-primary font-bold">
-                <i class="fa-solid fa-handshake"></i>
-            </div>
-            <div>
-                <h1 class="font-bold text-sm leading-tight">Маркетплейс для своих</h1>
-                <p class="text-xs text-tg-hint" id="user-greeting">Загрузка...</p>
-            </div>
+<!-- Top Header -->
+<header class="sticky top-0 z-40 bg-tg-card/90 backdrop-blur-md border-b border-tg-border px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+        <div class="w-8 h-8 rounded-full bg-tg-primary/20 flex items-center justify-center text-tg-primary font-bold">
+            <i class="fa-solid fa-handshake"></i>
         </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="switchTab('catalog')" id="nav-badge-catalog" class="relative p-2 text-tg-hint hover:text-white transition">
-                <i class="fa-solid fa-store text-lg"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="flex-1 max-w-md w-full mx-auto p-4 flex flex-col">
-
-        <!-- TAB 1: CATALOG -->
-        <section id="tab-catalog" class="space-y-4">
-            <!-- Search & Filter bar -->
-            <div class="space-y-2">
-                <div class="relative">
-                    <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-tg-hint text-sm"></i>
-                    <input type="text" id="search-input" oninput="filterListings()" placeholder="Поиск услуг и товаров..." 
-                           class="w-full bg-tg-card border border-tg-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary transition">
-                </div>
-                <!-- Categories Chips -->
-                <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="category-chips">
-                    <button onclick="selectCategory('all')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-primary text-white whitespace-nowrap transition">Все</button>
-                    <button onclick="selectCategory('Услуги')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Услуги</button>
-                    <button onclick="selectCategory('Товары')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Товары</button>
-                    <button onclick="selectCategory('Недвижимость')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Недвижимость</button>
-                    <button onclick="selectCategory('Авто')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Авто</button>
-                    <button onclick="selectCategory('Разное')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Разное</button>
-                </div>
-            </div>
-
-            <!-- Listings Feed -->
-            <div id="listings-container" class="space-y-3">
-                <!-- Dynamically populated -->
-                <div class="text-center py-12 text-tg-hint">
-                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
-                    <p class="text-sm">Загрузка объявлений из облака...</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- TAB 2: MY SERVICES -->
-        <section id="tab-my-services" class="space-y-4 hidden">
-            <div class="flex justify-between items-center">
-                <h2 class="text-lg font-bold">Мои объявления</h2>
-                <button onclick="switchTab('add')" class="text-xs bg-tg-primary text-white px-3 py-1.5 rounded-lg font-medium hover:bg-tg-primaryHover transition">
-                    <i class="fa-solid fa-plus mr-1"></i> Добавить
-                </button>
-            </div>
-            <div id="my-listings-container" class="space-y-3">
-                <!-- Dynamically populated -->
-            </div>
-        </section>
-
-        <!-- TAB 3: ADD SERVICE -->
-        <section id="tab-add" class="space-y-4 hidden">
-            <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg">
-                <h2 class="text-base font-bold mb-3 flex items-center">
-                    <i class="fa-solid fa-circle-plus text-tg-primary mr-2"></i> Новое объявление
-                </h2>
-                <form id="add-service-form" onsubmit="handleCreateListing(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Название</label>
-                        <input type="text" id="form-title" required placeholder="Например: Ремонт телефонов / Помощь с дизайном"
-                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Категория</label>
-                        <select id="form-category" class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-tg-primary">
-                            <option value="Услуги">Услуги</option>
-                            <option value="Товары">Товары</option>
-                            <option value="Недвижимость">Недвижимость</option>
-                            <option value="Авто">Авто</option>
-                            <option value="Разное">Разное</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs font-medium text-tg-hint mb-1">Обычная цена (руб.)</label>
-                            <input type="text" id="form-reg-price" required placeholder="1500"
-                                   class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-tg-hint mb-1">Цена для своих (руб.)</label>
-                            <input type="text" id="form-friend-price" required placeholder="1000"
-                                   class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Описание</label>
-                        <textarea id="form-desc" rows="3" required placeholder="Опишите подробнее ваше предложение..."
-                                  class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary resize-none"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Telegram для связи (username)</label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-2 text-tg-hint text-sm">@</span>
-                            <input type="text" id="form-tg" required placeholder="username"
-                                   class="w-full bg-tg-bg border border-tg-border rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Ссылка на фото (URL)</label>
-                        <input type="url" id="form-image" placeholder="https://example.com/image.jpg (необязательно)"
-                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                    </div>
-                    <button type="submit" class="w-full py-3 bg-tg-primary hover:bg-tg-primaryHover text-white font-semibold rounded-xl text-sm transition shadow-lg mt-2">
-                        Опубликовать в маркетплейс
-                    </button>
-                </form>
-            </div>
-        </section>
-
-        <!-- TAB 4: ADMIN PANEL (Strictly Admin Only) -->
-        <section id="tab-admin" class="space-y-4 hidden">
-            <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg border-l-4 border-l-amber-500">
-                <h2 class="text-base font-bold mb-1 flex items-center text-amber-400">
-                    <i class="fa-solid fa-shield-halved mr-2"></i> Панель Администратора
-                </h2>
-                <p class="text-xs text-tg-hint mb-3">Этот раздел виден только владельцу приложения.</p>
-                <div class="grid grid-cols-2 gap-2 mb-4">
-                    <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
-                        <span class="block text-xs text-tg-hint">Всего объявлений</span>
-                        <span id="admin-total-count" class="text-lg font-bold text-white">0</span>
-                    </div>
-                    <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
-                        <span class="block text-xs text-tg-hint">Статус базы</span>
-                        <span class="text-xs font-bold text-emerald-400 mt-1 block">Активна (Firebase)</span>
-                    </div>
-                </div>
-                <h3 class="text-sm font-bold mb-2">Управление всеми объявлениями:</h3>
-                <div id="admin-listings-container" class="space-y-2 max-h-96 overflow-y-auto">
-                    <!-- Admin list -->
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Bottom Navigation Bar -->
-    <nav class="fixed bottom-0 left-0 right-0 z-40 bg-tg-card/95 backdrop-blur-md border-t border-tg-border py-2 px-4">
-        <div class="max-w-md mx-auto flex justify-around items-center">
-            <button onclick="switchTab('catalog')" id="btn-tab-catalog" class="flex flex-col items-center text-tg-primary transition py-1 px-3">
-                <i class="fa-solid fa-store text-lg mb-0.5"></i>
-                <span class="text-[10px] font-medium">Каталог</span>
-            </button>
-            <button onclick="switchTab('my-services')" id="btn-tab-my-services" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
-                <i class="fa-solid fa-list-check text-lg mb-0.5"></i>
-                <span class="text-[10px] font-medium">Мои</span>
-            </button>
-            <button onclick="switchTab('add')" id="btn-tab-add" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
-                <i class="fa-solid fa-plus-circle text-lg mb-0.5"></i>
-                <span class="text-[10px] font-medium">Создать</span>
-            </button>
-            <!-- Admin Nav Tab (Hidden by default unless admin) -->
-            <button onclick="switchTab('admin')" id="btn-tab-admin" class="hidden flex-col items-center text-amber-400 transition py-1 px-3">
-                <i class="fa-solid fa-shield-halved text-lg mb-0.5"></i>
-                <span class="text-[10px] font-medium">Админ</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Custom Modal for Notifications / Confirmations -->
-    <div id="custom-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-tg-card border border-tg-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-            <h3 id="modal-title" class="text-base font-bold text-white">Уведомление</h3>
-            <p id="modal-message" class="text-sm text-tg-hint">Текст сообщения...</p>
-            <div id="modal-buttons" class="flex space-x-2 pt-2">
-                <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Ок</button>
-            </div>
+        <div>
+            <h1 class="font-bold text-sm leading-tight">Маркетплейс для своих</h1>
+            <p class="text-xs text-tg-hint" id="user-greeting">Загрузка...</p>
         </div>
     </div>
+    <div class="flex items-center space-x-2">
+        <button onclick="switchTab('catalog')" id="nav-badge-catalog" class="relative p-2 text-tg-hint hover:text-white transition">
+            <i class="fa-solid fa-store text-lg"></i>
+        </button>
+    </div>
+</header>
 
-    <!-- Firebase SDK & App Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+<!-- Main Container -->
+<main class="flex-1 max-w-md w-full mx-auto p-4 flex flex-col">
 
-        // НАСТРОЙКА АДМИНА: Укажите здесь свой Telegram username (без символа @)
-        // Пример: const ADMIN_USERNAME = "my_telegram_handle";
-        const ADMIN_USERNAME = "klimk93"; 
+    <!-- TAB 1: CATALOG -->
+    <section id="tab-catalog" class="space-y-4">
+        <!-- Search & Filter bar -->
+        <div class="space-y-2">
+            <div class="relative">
+                <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-tg-hint text-sm"></i>
+                <input type="text" id="search-input" oninput="filterListings()" placeholder="Поиск услуг и товаров..." 
+                       class="w-full bg-tg-card border border-tg-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary transition">
+            </div>
+            <!-- Categories Chips -->
+            <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="category-chips">
+                <button onclick="selectCategory('all')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-primary text-white whitespace-nowrap transition">Все</button>
+                <button onclick="selectCategory('Услуги')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Услуги</button>
+                <button onclick="selectCategory('Товары')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Товары</button>
+                <button onclick="selectCategory('Недвижимость')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Недвижимость</button>
+                <button onclick="selectCategory('Авто')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Авто</button>
+                <button onclick="selectCategory('Разное')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Разное</button>
+            </div>
+        </div>
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        <!-- Listings Feed -->
+        <div id="listings-container" class="space-y-3">
+            <!-- Dynamically populated -->
+            <div class="text-center py-12 text-tg-hint">
+                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                <p class="text-sm">Загрузка объявлений из облака...</p>
+            </div>
+        </div>
+    </section>
 
-        let app, db, auth;
-        let currentUser = null;
-        let allListings = [];
-        let currentCategory = 'all';
-        let searchQuery = '';
+    <!-- TAB 2: MY SERVICES -->
+    <section id="tab-my-services" class="space-y-4 hidden">
+        <div class="flex justify-between items-center">
+            <h2 class="text-lg font-bold">Мои объявления</h2>
+            <button onclick="switchTab('add')" class="text-xs bg-tg-primary text-white px-3 py-1.5 rounded-lg font-medium hover:bg-tg-primaryHover transition">
+                <i class="fa-solid fa-plus mr-1"></i> Добавить
+            </button>
+        </div>
+        <div id="my-listings-container" class="space-y-3">
+            <!-- Dynamically populated -->
+        </div>
+    </section>
 
-        // Expose functions globally for HTML onclick handlers
-        window.switchTab = switchTab;
-        window.selectCategory = selectCategory;
-        window.filterListings = filterListings;
-        window.handleCreateListing = handleCreateListing;
-        window.deleteListing = deleteListing;
-        window.showModal = showModal;
-        window.closeModal = closeModal;
+    <!-- TAB 3: ADD SERVICE -->
+    <section id="tab-add" class="space-y-4 hidden">
+        <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg">
+            <h2 class="text-base font-bold mb-3 flex items-center">
+                <i class="fa-solid fa-circle-plus text-tg-primary mr-2"></i> Новое объявление
+            </h2>
+            <form id="add-service-form" onsubmit="handleCreateListing(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-tg-hint mb-1">Название</label>
+                    <input type="text" id="form-title" required placeholder="Например: Ремонт телефонов / Помощь с дизайном"
+                           class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-tg-hint mb-1">Категория</label>
+                    <select id="form-category" class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-tg-primary">
+                        <option value="Услуги">Услуги</option>
+                        <option value="Товары">Товары</option>
+                        <option value="Недвижимость">Недвижимость</option>
+                        <option value="Авто">Авто</option>
+                        <option value="Разное">Разное</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium text-tg-hint mb-1">Обычная цена (руб.)</label>
+                        <input type="text" id="form-reg-price" required placeholder="1500"
+                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-tg-hint mb-1">Цена для своих (руб.)</label>
+                        <input type="text" id="form-friend-price" required placeholder="1000"
+                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-tg-hint mb-1">Описание</label>
+                    <textarea id="form-desc" rows="3" required placeholder="Опишите подробнее ваше предложение..."
+                              class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-tg-hint mb-1">Telegram для связи (username)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-tg-hint text-sm">@</span>
+                        <input type="text" id="form-tg" required placeholder="username"
+                               class="w-full bg-tg-bg border border-tg-border rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-tg-hint mb-1">Ссылка на фото (URL)</label>
+                    <input type="url" id="form-image" placeholder="https://example.com/image.jpg (необязательно)"
+                           class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                </div>
+                <button type="submit" class="w-full py-3 bg-tg-primary hover:bg-tg-primaryHover text-white font-semibold rounded-xl text-sm transition shadow-lg mt-2">
+                    Опубликовать в маркетплейс
+                </button>
+            </form>
+        </div>
+    </section>
 
-        // Initialize Firebase & Auth
-        async function initFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+    <!-- TAB 4: ADMIN PANEL (Strictly Admin Only) -->
+    <section id="tab-admin" class="space-y-4 hidden">
+        <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg border-l-4 border-l-amber-500">
+            <h2 class="text-base font-bold mb-1 flex items-center text-amber-400">
+                <i class="fa-solid fa-shield-halved mr-2"></i> Панель Администратора
+            </h2>
+            <p class="text-xs text-tg-hint mb-3">Этот раздел виден только владельцу приложения.</p>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
+                    <span class="block text-xs text-tg-hint">Всего объявлений</span>
+                    <span id="admin-total-count" class="text-lg font-bold text-white">0</span>
+                </div>
+                <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
+                    <span class="block text-xs text-tg-hint">Статус базы</span>
+                    <span class="text-xs font-bold text-emerald-400 mt-1 block">Активна (Firebase)</span>
+                </div>
+            </div>
+            <h3 class="text-sm font-bold mb-2">Управление всеми объявлениями:</h3>
+            <div id="admin-listings-container" class="space-y-2 max-h-96 overflow-y-auto">
+                <!-- Admin list -->
+            </div>
+        </div>
+    </section>
 
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                currentUser = auth.currentUser;
-                console.log("Authenticated user ID:", currentUser?.uid);
+</main>
 
-                // Init Telegram WebApp
-                if (window.Telegram && window.Telegram.WebApp) {
-                    const tg = window.Telegram.WebApp;
-                    tg.ready();
-                    tg.expand();
-                    const user = tg.initDataUnsafe?.user;
-                    if (user) {
-                        const name = user.first_name || user.username || "Пользователь";
-                        document.getElementById('user-greeting').textContent = `Привет, ${name}!`;
-                        if (user.username) {
-                            const tgInput = document.getElementById('form-tg');
-                            if (tgInput && !tgInput.value) {
-                                tgInput.value = user.username;
-                            }
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-tg-card/95 backdrop-blur-md border-t border-tg-border py-2 px-4">
+    <div class="max-w-md mx-auto flex justify-around items-center">
+        <button onclick="switchTab('catalog')" id="btn-tab-catalog" class="flex flex-col items-center text-tg-primary transition py-1 px-3">
+            <i class="fa-solid fa-store text-lg mb-0.5"></i>
+            <span class="text-[10px] font-medium">Каталог</span>
+        </button>
+        <button onclick="switchTab('my-services')" id="btn-tab-my-services" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
+            <i class="fa-solid fa-list-check text-lg mb-0.5"></i>
+            <span class="text-[10px] font-medium">Мои</span>
+        </button>
+        <button onclick="switchTab('add')" id="btn-tab-add" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
+            <i class="fa-solid fa-plus-circle text-lg mb-0.5"></i>
+            <span class="text-[10px] font-medium">Создать</span>
+        </button>
+        <!-- Admin Nav Tab (Hidden by default unless admin) -->
+        <button onclick="switchTab('admin')" id="btn-tab-admin" class="hidden flex-col items-center text-amber-400 transition py-1 px-3">
+            <i class="fa-solid fa-shield-halved text-lg mb-0.5"></i>
+            <span class="text-[10px] font-medium">Админ</span>
+        </button>
+    </div>
+</nav>
+
+<!-- Custom Modal for Notifications / Confirmations -->
+<div id="custom-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-tg-card border border-tg-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+        <h3 id="modal-title" class="text-base font-bold text-white">Уведомление</h3>
+        <p id="modal-message" class="text-sm text-tg-hint">Текст сообщения...</p>
+        <div id="modal-buttons" class="flex space-x-2 pt-2">
+            <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Ок</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK & App Logic -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // ==========================================
+    // НАСТРОЙКИ (ЗАПОЛНИТЕ ДЛЯ СВОЕГО СЕРВЕРА)
+    // ==========================================
+    
+    // 1. Укажите ваш Telegram username (без символа @), чтобы получить доступ админа
+    const ADMIN_USERNAME = "klimk93"; 
+
+    // 2. Вставьте сюда конфигурацию из вашей консоли Firebase (Project Settings -> General -> Your apps -> Web)
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+        ? JSON.parse(__firebase_config) 
+        : {
+            apiKey: "AIzaSyB9Fck959BK1oMgAu05SEk6tD1QX7_fGw4",
+            authDomain: "market-sublife.firebaseapp.com",
+            projectId: "market-sublife",
+            storageBucket: "Вmarket-sublife.firebasestorage.app",
+            messagingSenderId: "73424570465",
+            appId: "1:73424570465:web:47facedab3b73a49fd8220"
+        };
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'friends-marketplace-main';
+
+    // ==========================================
+
+    let app, db, auth;
+    let currentUser = null;
+    let allListings = [];
+    let currentCategory = 'all';
+    let searchQuery = '';
+
+    // Expose functions globally for HTML onclick handlers
+    window.switchTab = switchTab;
+    window.selectCategory = selectCategory;
+    window.filterListings = filterListings;
+    window.handleCreateListing = handleCreateListing;
+    window.deleteListing = deleteListing;
+    window.showModal = showModal;
+    window.closeModal = closeModal;
+
+    // Initialize Firebase & Auth
+    async function initFirebase() {
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+            
+            currentUser = auth.currentUser;
+            console.log("Authenticated user ID:", currentUser?.uid);
+
+            // Init Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+                const user = tg.initDataUnsafe?.user;
+                if (user) {
+                    const name = user.first_name || user.username || "Пользователь";
+                    document.getElementById('user-greeting').textContent = `Привет, ${name}!`;
+                    if (user.username) {
+                        const tgInput = document.getElementById('form-tg');
+                        if (tgInput && !tgInput.value) {
+                            tgInput.value = user.username;
                         }
-                    } else {
-                        document.getElementById('user-greeting').textContent = "Маркетплейс для своих";
                     }
                 } else {
                     document.getElementById('user-greeting').textContent = "Маркетплейс для своих";
                 }
-
-                checkAdminAccess();
-                setupRealtimeListener();
-
-            } catch (err) {
-                console.error("Firebase init error:", err);
-                document.getElementById('listings-container').innerHTML = `
-                    <div class="text-center py-12 text-tg-danger">
-                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
-                        <p class="text-sm">Ошибка подключения к базе данных.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function checkAdminAccess() {
-            if (!currentUser) return;
-            let isAdmin = false;
-
-            // Check Telegram WebApp user username
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const username = tgUser?.username || "";
-            const userId = tgUser?.id?.toString() || "";
-
-            if (ADMIN_USERNAME && ADMIN_USERNAME !== "YOUR_TELEGRAM_USERNAME") {
-                if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
-                    isAdmin = true;
-                }
-            }
-
-            // Also for testing convenience: if user is the very first creator or if ADMIN_USERNAME matches uid/etc.
-            // But strictly according to instructions: ADMIN_USERNAME constant.
-            if (isAdmin) {
-                document.getElementById('btn-tab-admin').classList.remove('hidden');
-                document.getElementById('btn-tab-admin').classList.add('flex');
             } else {
-                document.getElementById('btn-tab-admin').classList.add('hidden');
-                document.getElementById('btn-tab-admin').classList.remove('flex');
-            }
-        }
-
-        function setupRealtimeListener() {
-            if (!currentUser) return;
-            const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
-            
-            onSnapshot(listingsRef, (snapshot) => {
-                allListings = [];
-                snapshot.forEach((docSnap) => {
-                    allListings.push({ id: docSnap.id, ...docSnap.data() });
-                });
-                // Sort by newest first
-                allListings.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                
-                renderCatalog();
-                renderMyServices();
-                renderAdminPanel();
-            }, (error) => {
-                console.error("Firestore snapshot error:", error);
-            });
-        }
-
-        // Tab Navigation
-        function switchTab(tabId) {
-            ['catalog', 'my-services', 'add', 'admin'].forEach(t => {
-                const el = document.getElementById(`tab-${t}`);
-                if (el) el.classList.add('hidden');
-                const btn = document.getElementById(`btn-tab-${t}`);
-                if (btn) {
-                    btn.classList.remove('text-tg-primary', 'text-amber-400', 'text-white');
-                    btn.classList.add('text-tg-hint');
-                }
-            });
-
-            const targetTab = document.getElementById(`tab-${tabId}`);
-            if (targetTab) targetTab.classList.remove('hidden');
-
-            const targetBtn = document.getElementById(`btn-tab-${tabId}`);
-            if (targetBtn) {
-                targetBtn.classList.remove('text-tg-hint');
-                if (tabId === 'admin') {
-                    targetBtn.classList.add('text-amber-400');
-                } else {
-                    targetBtn.classList.add('text-tg-primary');
-                }
+                document.getElementById('user-greeting').textContent = "Маркетплейс для своих";
             }
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+            checkAdminAccess();
+            setupRealtimeListener();
 
-        // Category Selection
-        function selectCategory(cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.cat-chip').forEach(btn => {
-                btn.classList.remove('bg-tg-primary', 'text-white');
-                btn.classList.add('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
-            });
-            event.currentTarget.classList.remove('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
-            event.currentTarget.classList.add('bg-tg-primary', 'text-white');
-            renderCatalog();
-        }
-
-        function filterListings() {
-            searchQuery = document.getElementById('search-input').value.toLowerCase();
-            renderCatalog();
-        }
-
-        // Render Catalog Feed
-        function renderCatalog() {
-            const container = document.getElementById('listings-container');
-            let filtered = allListings.filter(item => {
-                const matchCat = currentCategory === 'all' || item.category === currentCategory;
-                const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery) || item.description.toLowerCase().includes(searchQuery);
-                return matchCat && matchSearch;
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-16 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
-                        <i class="fa-solid fa-box-open text-3xl text-tg-hint"></i>
-                        <p class="text-sm font-semibold">Пока нет объявлений</p>
-                        <p class="text-xs text-tg-hint">Будьте первыми, кто предложит товар или услугу для своих!</p>
-                        <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(item => {
-                const isOwner = currentUser && item.userId === currentUser.uid;
-                const isUserAdmin = checkAdminUserHelper();
-                const canManage = isOwner || isUserAdmin;
-
-                const defaultImg = `https://placehold.co/400x250/242f3d/8a9ba8?text=${encodeURIComponent(item.category || 'Сервис')}`;
-                const imgSrc = item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : defaultImg;
-
-                return `
-                    <div class="bg-tg-card border border-tg-border rounded-2xl overflow-hidden shadow-md transition hover:border-tg-primary/50 flex flex-col">
-                        <div class="relative h-40 w-full bg-tg-bg overflow-hidden">
-                            <img src="${imgSrc}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x250/242f3d/8a9ba8?text=Фото'">
-                            <span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-                                ${escapeHtml(item.category)}
-                            </span>
-                            ${canManage ? `
-                                <button onclick="deleteListing('${item.id}')" class="absolute top-2.5 right-2.5 bg-red-600/80 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center transition shadow">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                        <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-                            <div>
-                                <h3 class="font-bold text-base text-white leading-snug">${escapeHtml(item.title)}</h3>
-                                <p class="text-xs text-tg-hint mt-1 line-clamp-2">${escapeHtml(item.description)}</p>
-                            </div>
-                            <div class="flex items-center justify-between pt-2 border-t border-tg-border/50">
-                                <div>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-sm font-bold text-emerald-400">${escapeHtml(item.friendPrice)} ₽</span>
-                                        <span class="text-xs text-tg-hint line-through">${escapeHtml(item.regularPrice)} ₽</span>
-                                    </div>
-                                    <span class="text-[10px] text-tg-hint">Цена для своих</span>
-                                </div>
-                                <a href="https://t.me/${escapeHtml(item.telegramUsername)}" target="_blank" 
-                                   class="px-3.5 py-2 bg-tg-primary hover:bg-tg-primaryHover text-white text-xs font-semibold rounded-xl transition flex items-center shadow">
-                                    <i class="fa-brands fa-telegram mr-1.5 text-sm"></i> Связаться
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Render "My Services"
-        function renderMyServices() {
-            const container = queryMyServicesContainer();
-            if (!container || !currentUser) return;
-
-            const myListings = allListings.filter(item => item.userId === currentUser.uid);
-
-            if (myListings.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center py-12 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
-                        <i class="fa-solid fa-folder-open text-3xl text-tg-hint"></i>
-                        <p class="text-sm font-semibold">У вас пока нет объявлений</p>
-                        <p class="text-xs text-tg-hint">Создайте свое первое объявление, чтобы оно появилось в ленте.</p>
-                        <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = myListings.map(item => `
-                <div class="bg-tg-card border border-tg-border rounded-xl p-3.5 flex items-center justify-between shadow-sm">
-                    <div class="flex items-center space-x-3 overflow-hidden">
-                        <div class="w-12 h-12 rounded-lg bg-tg-bg overflow-hidden flex-shrink-0">
-                            <img src="${item.imageUrl || 'https://placehold.co/100x100/242f3d/8a9ba8?text=Фото'}" class="w-full h-full object-cover">
-                        </div>
-                        <div class="overflow-hidden">
-                            <h4 class="font-bold text-sm text-white truncate">${escapeHtml(item.title)}</h4>
-                            <p class="text-xs text-emerald-400 font-semibold">${escapeHtml(item.friendPrice)} ₽ <span class="text-tg-hint text-[10px] font-normal">("свои")</span></p>
-                        </div>
-                    </div>
-                    <button onclick="deleteListing('${item.id}')" class="p-2 text-tg-danger hover:bg-red-500/10 rounded-lg transition">
-                        <i class="fa-solid fa-trash text-sm"></i>
-                    </button>
+        } catch (err) {
+            console.error("Firebase init error:", err);
+            document.getElementById('listings-container').innerHTML = `
+                <div class="text-center py-12 text-tg-danger px-4">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+                    <p class="text-sm font-bold">Ошибка подключения к базе данных.</p>
+                    <p class="text-xs text-tg-hint mt-1">Проверьте правильность ключей firebaseConfig в коде index.html</p>
                 </div>
-            `).join('');
+            `;
         }
+    }
 
-        function queryMyServicesContainer() {
-            return document.getElementById('my-listings-container');
-        }
+    function checkAdminAccess() {
+        if (!currentUser) return;
+        let isAdmin = false;
 
-        // Render Admin Panel
-        function renderAdminPanel() {
-            const container = document.getElementById('admin-listings-container');
-            const totalCountEl = document.getElementById('admin-total-count');
-            if (!container || !totalCountEl) return;
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        const username = tgUser?.username || "";
 
-            totalCountEl.textContent = allListings.length;
-
-            if (allListings.length === 0) {
-                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Список объявлений пуст</p>`;
-                return;
-            }
-
-            container.innerHTML = allListings.map(item => `
-                <div class="bg-tg-bg border border-tg-border rounded-xl p-3 flex items-center justify-between">
-                    <div>
-                        <h4 class="font-bold text-xs text-white">${escapeHtml(item.title)}</h4>
-                        <p class="text-[10px] text-tg-hint">Категория: ${escapeHtml(item.category)} • @${escapeHtml(item.telegramUsername)}</p>
-                    </div>
-                    <button onclick="deleteListing('${item.id}')" class="px-2.5 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-medium rounded-lg transition">
-                        Удалить
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function checkAdminUserHelper() {
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            const username = tgUser?.username || "";
-            if (ADMIN_USERNAME && ADMIN_USERNAME !== "YOUR_TELEGRAM_USERNAME") {
-                if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // Handle Create Listing Form Submission
-        async function handleCreateListing(e) {
-            e.preventDefault();
-            if (!currentUser) {
-                showModal("Ошибка", "Не удалось определить пользователя. Пожалуйста, перезапустите приложение.");
-                return;
-            }
-
-            const title = document.getElementById('form-title').value.trim();
-            const category = document.getElementById('form-category').value;
-            const regularPrice = document.getElementById('form-reg-price').value.trim();
-            const friendPrice = document.getElementById('form-friend-price').value.trim();
-            const description = document.getElementById('form-desc').value.trim();
-            const telegramUsername = document.getElementById('form-tg').value.trim().replace(/^@/, '');
-            const imageUrl = document.getElementById('form-image').value.trim();
-
-            if (!title || !regularPrice || !friendPrice || !description || !telegramUsername) {
-                showModal("Ошибка", "Пожалуйста, заполните все обязательные поля.");
-                return;
-            }
-
-            try {
-                const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
-                await addDoc(listingsRef, {
-                    title,
-                    category,
-                    regularPrice,
-                    friendPrice,
-                    description,
-                    telegramUsername,
-                    imageUrl,
-                    userId: currentUser.uid,
-                    createdAt: Date.now()
-                });
-
-                document.getElementById('add-service-form').reset();
-                // Restore default telegram username if available
-                const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-                if (tgUser?.username) {
-                    document.getElementById('form-tg').value = tgUser.username;
-                }
-
-                showModal("Успешно!", "Ваше объявление опубликовано и теперь видно всем пользователям.");
-                switchTab('catalog');
-
-            } catch (err) {
-                console.error("Error adding listing:", err);
-                showModal("Ошибка", "Не удалось сохранить объявление. Попробуйте еще раз.");
+        if (ADMIN_USERNAME && ADMIN_USERNAME !== "ваш_телеграм_username") {
+            if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+                isAdmin = true;
             }
         }
 
-        // Delete Listing
-        async function deleteListing(id) {
-            showConfirm("Удаление", "Вы действительно хотите удалить это объявление?", async () => {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'listings', id);
-                    await deleteDoc(docRef);
-                    showModal("Успешно", "Объявление удалено.");
-                } catch (err) {
-                    console.error("Error deleting listing:", err);
-                    showModal("Ошибка", "Не удалось удалить объявление.");
-                }
+        if (isAdmin) {
+            document.getElementById('btn-tab-admin').classList.remove('hidden');
+            document.getElementById('btn-tab-admin').classList.add('flex');
+        } else {
+            document.getElementById('btn-tab-admin').classList.add('hidden');
+            document.getElementById('btn-tab-admin').classList.remove('flex');
+        }
+    }
+
+    function setupRealtimeListener() {
+        if (!currentUser) return;
+        const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
+        
+        onSnapshot(listingsRef, (snapshot) => {
+            allListings = [];
+            snapshot.forEach((docSnap) => {
+                allListings.push({ id: docSnap.id, ...docSnap.data() });
             });
-        }
-
-        // Custom Modal Helpers (No alert/confirm)
-        function showModal(title, message, onOk = null) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-            const buttonsContainer = document.getElementById('modal-buttons');
+            allListings.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
             
-            buttonsContainer.innerHTML = `
-                <button onclick="closeModal(); ${onOk ? '(' + onOk.toString() + ')()' : ''}" class="flex-1 py-2.5 bg-tg-primary hover:bg-tg-primaryHover text-white font-medium rounded-xl text-sm transition">Ок</button>
-            `;
-            document.getElementById('custom-modal').classList.remove('hidden');
-        }
-
-        function showConfirm(title, message, onConfirm) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-            const buttonsContainer = document.getElementById('modal-buttons');
-            
-            buttonsContainer.innerHTML = `
-                <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Отмена</button>
-                <button id="modal-confirm-btn" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl text-sm transition">Удалить</button>
-            `;
-            document.getElementById('custom-modal').classList.remove('hidden');
-
-            document.getElementById('modal-confirm-btn').onclick = () => {
-                closeModal();
-                onConfirm();
-            };
-        }
-
-        function closeModal() {
-            document.getElementById('custom-modal').classList.add('hidden');
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        // Run on load
-        window.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
+            renderCatalog();
+            renderMyServices();
+            renderAdminPanel();
+        }, (error) => {
+            console.error("Firestore snapshot error:", error);
         });
-    </script>
-</body>
-</html>
+    }
+
+    // Tab Navigation
+    function switchTab(tabId) {
+        ['catalog', 'my-services', 'add', 'admin'].forEach(t => {
+            const el = document.getElementById(`tab-${t}`);
+            if (el) el.classList.add('hidden');
+            const btn = document.getElementById(`btn-tab-${t}`);
+            if (btn) {
+                btn.classList.remove('text-tg-primary', 'text-amber-400', 'text-white');
+                btn.classList.add('text-tg-hint');
+            }
+        });
+
+        const targetTab = document.getElementById(`tab-${tabId}`);
+        if (targetTab) targetTab.classList.remove('hidden');
+
+        const targetBtn = document.getElementById(`btn-tab-${tabId}`);
+        if (targetBtn) {
+            targetBtn.classList.remove('text-tg-hint');
+            if (tabId === 'admin') {
+                targetBtn.classList.add('text-amber-400');
+            } else {
+                targetBtn.classList.add('text-tg-primary');
+            }
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Category Selection
+    function selectCategory(cat) {
+        currentCategory = cat;
+        document.querySelectorAll('.cat-chip').forEach(btn => {
+            btn.classList.remove('bg-tg-primary', 'text-white');
+            btn.classList.add('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
+        });
+        event.currentTarget.classList.remove('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
+        event.currentTarget.classList.add('bg-tg-primary', 'text-white');
+        renderCatalog();
+    }
+
+    function filterListings() {
+        searchQuery = document.getElementById('search-input').value.toLowerCase();
+        renderCatalog();
+    }
+
+    // Render Catalog Feed
+    function renderCatalog() {
+        const container = document.getElementById('listings-container');
+        let filtered = allListings.filter(item => {
+            const matchCat = currentCategory === 'all' || item.category === currentCategory;
+            const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery) || item.description.toLowerCase().includes(searchQuery);
+            return matchCat && matchSearch;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-16 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
+                    <i class="fa-solid fa-box-open text-3xl text-tg-hint"></i>
+                    <p class="text-sm font-semibold">Пока нет объявлений</p>
+                    <p class="text-xs text-tg-hint">Будьте первыми, кто предложит товар или услугу для своих!</p>
+                    <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filtered.map(item => {
+            const isOwner = currentUser && item.userId === currentUser.uid;
+            const isUserAdmin = checkAdminUserHelper();
+            const canManage = isOwner || isUserAdmin;
+
+            const defaultImg = `https://placehold.co/400x250/242f3d/8a9ba8?text=${encodeURIComponent(item.category || 'Сервис')}`;
+            const imgSrc = item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : defaultImg;
+
+            return `
+                <div class="bg-tg-card border border-tg-border rounded-2xl overflow-hidden shadow-md transition hover:border-tg-primary/50 flex flex-col">
+                    <div class="relative h-40 w-full bg-tg-bg overflow-hidden">
+                        <img src="${imgSrc}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x250/242f3d/8a9ba8?text=Фото'">
+                        <span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+                            ${escapeHtml(item.category)}
+                        </span>
+                        ${canManage ? `
+                            <button onclick="deleteListing('${item.id}')" class="absolute top-2.5 right-2.5 bg-red-600/80 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center transition shadow">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                            <h3 class="font-bold text-base text-white leading-snug">${escapeHtml(item.title)}</h3>
+                            <p class="text-xs text-tg-hint mt-1 line-clamp-2">${escapeHtml(item.description)}</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-tg-border/50">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm font-bold text-emerald-400">${escapeHtml(item.friendPrice)} ₽</span>
+                                    <span class="text-xs text-tg-hint line-through">${escapeHtml(item.regularPrice)} ₽</span>
+                                </div>
+                                <span class="text-[10px] text-tg-hint">Цена для своих</span>
+                            </div>
+                            <a href="https://t.me/${escapeHtml(item.telegramUsername)}" target="_blank" 
+                               class="px-3.5 py-2 bg-tg-primary hover:bg-tg-primaryHover text-white text-xs font-semibold rounded-xl transition flex items-center shadow">
+                                <i class="fa-brands fa-telegram mr-1.5 text-sm"></i> Связаться
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Render "My Services"
+    function renderMyServices() {
+        const container = queryMyServicesContainer();
+        if (!container || !currentUser) return;
+
+        const myListings = allListings.filter(item => item.userId === currentUser.uid);
+
+        if (myListings.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
+                    <i class="fa-solid fa-folder-open text-3xl text-tg-hint"></i>
+                    <p class="text-sm font-semibold">У вас пока нет объявлений</p>
+                    <p class="text-xs text-tg-hint">Создайте свое первое объявление, чтобы оно появилось в ленте.</p>
+                    <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = myListings.map(item => `
+            <div class="bg-tg-card border border-tg-border rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <div class="w-12 h-12 rounded-lg bg-tg-bg overflow-hidden flex-shrink-0">
+                        <img src="${item.imageUrl || 'https://placehold.co/100x100/242f3d/8a9ba8?text=Фото'}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="overflow-hidden">
+                        <h4 class="font-bold text-sm text-white truncate">${escapeHtml(item.title)}</h4>
+                        <p class="text-xs text-emerald-400 font-semibold">${escapeHtml(item.friendPrice)} ₽ <span class="text-tg-hint text-[10px] font-normal">("свои")</span></p>
+                    </div>
+                </div>
+                <button onclick="deleteListing('${item.id}')" class="p-2 text-tg-danger hover:bg-red-500/10 rounded-lg transition">
+                    <i class="fa-solid fa-trash text-sm"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function queryMyServicesContainer() {
+        return document.getElementById('my-listings-container');
+    }
+
+    // Render Admin Panel
+    function renderAdminPanel() {
+        const container = document.getElementById('admin-listings-container');
+        const totalCountEl = document.getElementById('admin-total-count');
+        if (!container || !totalCountEl) return;
+
+        totalCountEl.textContent = allListings.length;
+
+        if (allListings.length === 0) {
+            container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Список объявлений пуст</p>`;
+            return;
+        }
+
+        container.innerHTML = allListings.map(item => `
+            <div class="bg-tg-bg border border-tg-border rounded-xl p-3 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-xs text-white">${escapeHtml(item.title)}</h4>
+                    <p class="text-[10px] text-tg-hint">Категория: ${escapeHtml(item.category)} • @${escapeHtml(item.telegramUsername)}</p>
+                </div>
+                <button onclick="deleteListing('${item.id}')" class="px-2.5 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-medium rounded-lg transition">
+                    Удалить
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function checkAdminUserHelper() {
+        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        const username = tgUser?.username || "";
+        if (ADMIN_USERNAME && ADMIN_USERNAME !== "ваш_телеграм_username") {
+            if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Handle Create Listing Form Submission
+    async function handleCreateListing(e) {
+        e.preventDefault();
+        if (!currentUser) {
+            showModal("Ошибка", "Не удалось определить пользователя. Пожалуйста, перезапустите приложение.");
+            return;
+        }
+
+        const title = document.getElementById('form-title').value.trim();
+        const category = document.getElementById('form-category').value;
+        const regularPrice = document.getElementById('form-reg-price').value.trim();
+        const friendPrice = document.getElementById('form-friend-price').value.trim();
+        const description = document.getElementById('form-desc').value.trim();
+        const telegramUsername = document.getElementById('form-tg').value.trim().replace(/^@/, '');
+        const imageUrl = document.getElementById('form-image').value.trim();
+
+        if (!title || !regularPrice || !friendPrice || !description || !telegramUsername) {
+            showModal("Ошибка", "Пожалуйста, заполните все обязательные поля.");
+            return;
+        }
+
+        try {
+            const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
+            await addDoc(listingsRef, {
+                title,
+                category,
+                regularPrice,
+                friendPrice,
+                description,
+                telegramUsername,
+                imageUrl,
+                userId: currentUser.uid,
+                createdAt: Date.now()
+            });
+
+            document.getElementById('add-service-form').reset();
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+            if (tgUser?.username) {
+                document.getElementById('form-tg').value = tgUser.username;
+            }
+
+            showModal("Успешно!", "Ваше объявление опубликовано и теперь видно всем пользователям.");
+            switchTab('catalog');
+
+        } catch (err) {
+            console.error("Error adding listing:", err);
+            showModal("Ошибка", "Не удалось сохранить объявление. Попробуйте еще раз.");
+        }
+    }
+
+    // Delete Listing
+    async function deleteListing(id) {
+        showConfirm("Удаление", "Вы действительно хотите удалить это объявление?", async () => {
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'listings', id);
+                await deleteDoc(docRef);
+                showModal("Успешно", "Объявление удалено.");
+            } catch (err) {
+                console.error("Error deleting listing:", err);
+                showModal("Ошибка", "Не удалось удалить объявление.");
+            }
+        });
+    }
+
+    // Custom Modal Helpers
+    function showModal(title, message, onOk = null) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').textContent = message;
+        const buttonsContainer = document.getElementById('modal-buttons');
+        
+        buttonsContainer.innerHTML = `
+            <button onclick="closeModal(); ${onOk ? '(' + onOk.toString() + ')()' : ''}" class="flex-1 py-2.5 bg-tg-primary hover:bg-tg-primaryHover text-white font-medium rounded-xl text-sm transition">Ок</button>
+        `;
+        document.getElementById('custom-modal').classList.remove('hidden');
+    }
+
+    function showConfirm(title, message, onConfirm) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-message').textContent = message;
+        const buttonsContainer = document.getElementById('modal-buttons');
+        
+        buttonsContainer.innerHTML = `
+            <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Отмена</button>
+            <button id="modal-confirm-btn" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl text-sm transition">Удалить</button>
+        `;
+        document.getElementById('custom-modal').classList.add('flex');
+        document.getElementById('custom-modal').classList.remove('hidden');
+
+        document.getElementById('modal-confirm-btn').onclick = () => {
+            closeModal();
+            onConfirm();
+        };
+    }
+
+    function closeModal() {
+        document.getElementById('custom-modal').classList.add('hidden');
+        document.getElementById('custom-modal').classList.remove('flex');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        initFirebase();
+    });
+</script>
