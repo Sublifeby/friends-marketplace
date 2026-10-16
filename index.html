@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Маркетплейс Друзей — Telegram Mini App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tg: {
+                            bg: '#0f172a',
+                            secondaryBg: '#1e293b',
+                            card: '#1e293b',
+                            accent: '#3b82f6',
+                            accentHover: '#2563eb'
+                        }
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.25rem',
+                        '3xl': '1.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        * {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-header {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .active-tab {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .active-tab-icon {
+            transform: translateY(-2px) scale(1.1);
+        }
+
+        .modal-enter {
+            animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .badge-pulse {
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.03); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen pb-24 antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- ШАПКА ПРИЛОЖЕНИЯ -->
+    <header class="sticky top-0 z-30 glass-header border-b border-slate-800/80 px-4 pt-4 pb-3 transition-all duration-200">
+        <!-- Верхняя панель: Профиль пользователя и Переключатель Админа -->
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <img id="userAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120" 
+                         alt="Аватар" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50 shadow-sm">
+                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-xs font-semibold text-blue-400 uppercase tracking-wider">Маркетплейс для своих</span>
+                        <i class="fa-solid fa-circle-check text-blue-400 text-[10px]"></i>
+                    </div>
+                    <h1 id="userGreeting" class="text-sm font-bold text-slate-100">Привет, Александр! 👋</h1>
+                </div>
+            </div>
+
+            <!-- Режим администратора (Переключатель) -->
+            <button onclick="toggleAdminMode()" id="adminToggleBtn" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all">
+                <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                <span id="adminToggleStatus">Админ: ВЫКЛ</span>
+            </button>
+        </div>
+
+        <!-- Баннер уведомления режима админа -->
+        <div id="adminModeBanner" class="hidden mb-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs px-3 py-1.5 rounded-xl flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                <span>Включен **Админ-режим**. Вы можете редактировать и удалять любые объявления!</span>
+            </div>
+            <button onclick="toggleAdminMode()" class="text-amber-400 hover:text-amber-200 text-xs underline font-semibold ml-2">Выключить</button>
+        </div>
+
+        <!-- Строка поиска -->
+        <div class="relative mb-3">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="searchInput" oninput="handleSearch()" 
+                   placeholder="Поиск навыков, друзей, услуг..." 
+                   class="w-full bg-slate-800/90 border border-slate-700/60 rounded-xl pl-10 pr-9 py-2.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+            <button id="clearSearch" onclick="clearSearchInput()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-circle-xmark text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Фильтры по категориям (Горизонтальный скролл) -->
+        <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1" id="categoryChips">
+            <!-- Категории рендерятся через JS -->
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="px-4 pt-4 max-w-2xl mx-auto">
+        
+        <!-- ВКЛАДКА 1: КАТАЛОГ УСЛУГ (ПО УМОЛЧАНИЮ) -->
+        <section id="viewCatalog" class="space-y-4">
+            <!-- Статус фильтрации и сортировка -->
+            <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+                <span id="resultsCount">Показаны все услуги</span>
+                <div class="flex items-center space-x-2">
+                    <span>Сортировка:</span>
+                    <select id="sortBy" onchange="renderCatalog()" class="bg-slate-800 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-xs focus:outline-none">
+                        <option value="newest">Сначала новые</option>
+                        <option value="discount">Большая скидка</option>
+                        <option value="priceAsc">Цена: по возрастанию</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Сетка карточек услуг -->
+            <div id="catalogGrid" class="grid grid-cols-1 gap-4">
+                <!-- Карточки загружаются динамически -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 2: МОИ УСЛУГИ И ЛИЧНЫЙ КАБИНЕТ -->
+        <section id="viewMyServices" class="hidden space-y-5">
+            <div class="bg-gradient-to-r from-blue-900/40 via-slate-800 to-indigo-900/40 border border-blue-500/20 rounded-2xl p-4">
+                <h2 class="text-base font-bold text-slate-100 mb-1">Ваш хаб фриланса и услуг</h2>
+                <p class="text-xs text-slate-400 mb-4">Управляйте предложениями для сообщества и отслеживайте интерес друзей.</p>
+                
+                <!-- Статистика активности -->
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-lg font-bold text-blue-400" id="statViews">0</div>
+                        <div class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Просмотры</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-lg font-bold text-amber-400" id="statInquiries">0</div>
+                        <div class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Диалоги</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-lg font-bold text-emerald-400" id="statDeals">0</div>
+                        <div class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Сделки</div>
+                    </div>
+                    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/50">
+                        <div class="text-lg font-bold text-purple-400" id="statEarned">0 ₽</div>
+                        <div class="text-[10px] text-slate-400 font-medium uppercase mt-0.5">Доход</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-200">Мои публикации (<span id="myListingsCount">0</span>)</h3>
+                <button onclick="openAddModal()" class="text-xs text-blue-400 font-semibold hover:underline flex items-center space-x-1">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>Добавить еще</span>
+                </button>
+            </div>
+
+            <!-- Список размещенных услуг пользователем -->
+            <div id="myServicesList" class="space-y-3">
+                <!-- Заполняется JS -->
+            </div>
+        </section>
+
+        <!-- ВКЛАДКА 3: ПАНЕЛЬ ОРГАНИЗАТОРА (АНАЛИТИКА И АДМИНИСТРИРОВАНИЕ) -->
+        <section id="viewAdmin" class="hidden space-y-5">
+            <!-- Баннер организатора -->
+            <div class="bg-slate-800 border border-purple-500/30 rounded-2xl p-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-purple-500/10 rounded-full blur-xl"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center space-x-1.5">
+                        <i class="fa-solid fa-chart-line"></i>
+                        <span>Панель Организатора</span>
+                    </span>
+                    <span class="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-500/30">Админ-панель</span>
+                </div>
+                <h2 class="text-lg font-bold text-slate-100">Управление Маркетплейсом</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Мониторинг сделок и модерация всех объявлений сообщества.</p>
+            </div>
+
+            <!-- Метрики сообщества -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-slate-400">Общий оборот (GMV)</span>
+                        <i class="fa-solid fa-sack-dollar text-emerald-400 text-sm"></i>
+                    </div>
+                    <div class="text-xl font-extrabold text-slate-100" id="adminGMV">0 ₽</div>
+                    <span class="text-[10px] text-emerald-400 font-medium">↑ Оборот сделок друзей</span>
+                </div>
+
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl p-3.5">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs text-slate-400">Завершенных сделок</span>
+                        <i class="fa-solid fa-handshake text-blue-400 text-sm"></i>
+                    </div>
+                    <div class="text-xl font-extrabold text-slate-100" id="adminDealsCount">0</div>
+                    <span class="text-[10px] text-slate-400" id="adminActiveCount">Всего публикаций: 0</span>
+                </div>
+            </div>
+
+            <!-- Управление всеми объявлениями для админа -->
+            <div class="bg-slate-800/90 border border-amber-500/30 rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-list-check text-amber-400"></i>
+                            <span>Модерация публикаций</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Как администратор, вы имеете доступ к редактированию и удалению любых объявлений.</p>
+                    </div>
+                </div>
+
+                <div id="adminListingsManager" class="space-y-2.5 pt-2">
+                    <!-- Заполняется JS -->
+                </div>
+            </div>
+
+            <!-- Симулятор комиссии организатора -->
+            <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100">Симулятор комиссии платформы</h3>
+                        <p class="text-xs text-slate-400">Посчитайте потенциальный доход при введении процента со сделок.</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="commissionRateLabel" class="text-base font-extrabold text-purple-400">8%</span>
+                        <div class="text-[9px] text-slate-400">Процент комиссии</div>
+                    </div>
+                </div>
+
+                <!-- Ползунок процента -->
+                <div class="space-y-1.5">
+                    <input type="range" id="commissionRange" min="0" max="20" step="1" value="8" 
+                           oninput="updateCommissionSimulation()"
+                           class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>0% (Бесплатно)</span>
+                        <span>10% (Оптимально)</span>
+                        <span>20% (Максимум)</span>
+                    </div>
+                </div>
+
+                <!-- Расчетные цифры -->
+                <div class="bg-slate-900/80 border border-slate-700/50 rounded-xl p-3 space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Доход организатора (За все время):</span>
+                        <span id="simTotalRevenue" class="font-bold text-emerald-400">0 ₽</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Прогнозируемый ежемесячный доход:</span>
+                        <span id="simMonthlyRevenue" class="font-bold text-blue-400">0 ₽ / мес</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400">Сэкономлено друзьями (Скидки):</span>
+                        <span id="simTotalSaved" class="font-bold text-amber-400">0 ₽</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- НИЖНЕЕ МЕНЮ НАВИГАЦИИ -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 border-t border-slate-800/90 backdrop-blur-md px-6 py-2">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            
+            <button onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1 text-blue-400 transition-all">
+                <i class="fa-solid fa-store text-lg transition-transform" id="navIconCatalog"></i>
+                <span class="text-[10px] font-medium">Услуги</span>
+            </button>
+
+            <button onclick="openAddModal()" class="flex flex-col items-center group">
+                <div class="w-11 h-11 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-500/30 -mt-5 border-2 border-slate-900 group-active:scale-90 transition-transform">
+                    <i class="fa-solid fa-plus text-base"></i>
+                </div>
+                <span class="text-[10px] font-medium text-slate-400 mt-0.5">Разместить</span>
+            </button>
+
+            <button onclick="switchTab('myServices')" id="navMyServices" class="flex flex-col items-center space-y-1 text-slate-400 transition-all">
+                <i class="fa-solid fa-user-gear text-lg transition-transform" id="navIconMyServices"></i>
+                <span class="text-[10px] font-medium">Мои услуги</span>
+            </button>
+
+            <button onclick="switchTab('admin')" id="navAdmin" class="flex flex-col items-center space-y-1 text-slate-400 transition-all">
+                <i class="fa-solid fa-chart-pie text-lg transition-transform" id="navIconAdmin"></i>
+                <span class="text-[10px] font-medium">Организатор</span>
+            </button>
+
+        </div>
+    </nav>
+
+    <!-- МОДАЛЬНОЕ ОКНО 1: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ УСЛУГИ -->
+    <div id="addModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto modal-enter p-5 space-y-4">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div>
+                    <h3 class="text-base font-bold text-slate-100" id="modalTitle">Разместить услугу</h3>
+                    <p class="text-xs text-slate-400">Указывайте честные цены и скидку для сообщества.</p>
+                </div>
+                <button onclick="closeAddModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <form id="serviceForm" onsubmit="handleSaveService(event)" class="space-y-3.5">
+                <input type="hidden" id="editServiceId" value="">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Название услуги или товара *</label>
+                    <input type="text" id="formTitle" required placeholder="Например: Аэросъемка, монтаж роликов и Reels" 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Исполнитель (Имя)</label>
+                        <input type="text" id="formProviderName" placeholder="Алексей М." 
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Telegram @username *</label>
+                        <input type="text" id="formHandle" required placeholder="@alex_dev" 
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Категория *</label>
+                    <select id="formCategory" required class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                        <option value="IT и Дизайн">IT и Дизайн</option>
+                        <option value="Авто и Тюнинг">Авто и Тюнинг</option>
+                        <option value="Фото и Видео">Фото и Видео</option>
+                        <option value="Спорт и Отдых">Спорт и Отдых</option>
+                        <option value="Обучение">Обучение</option>
+                        <option value="Ремонт и Дом">Ремонт и Дом</option>
+                        <option value="Юристы и Финансы">Юристы и Финансы</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/60">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Обычная цена (₽)</label>
+                        <input type="number" id="formRegularPrice" min="1" step="1" required placeholder="10000" oninput="calculateModalDiscount()"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-emerald-400 mb-1">Цена "для своих" (₽) *</label>
+                        <input type="number" id="formFriendPrice" min="1" step="1" required placeholder="8000" oninput="calculateModalDiscount()"
+                               class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="col-span-2 flex items-center justify-between text-xs text-slate-400 pt-1">
+                        <span>Размер скидки друзьям:</span>
+                        <span id="calculatedDiscountBadge" class="font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">0% СКИДКА</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">URL обложки / фотографии</label>
+                    <input type="url" id="formImageUrl" placeholder="https://images.unsplash.com/..." 
+                           class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-blue-500 mb-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-[10px] text-slate-400">Быстрые фото:</span>
+                        <button type="button" onclick="setPresetImage('tech')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300">IT</button>
+                        <button type="button" onclick="setPresetImage('photo')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300">Фото</button>
+                        <button type="button" onclick="setPresetImage('auto')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300">Авто</button>
+                        <button type="button" onclick="setPresetImage('sport')" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300">Спорт</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Описание и условия *</label>
+                    <textarea id="formDescription" rows="3" required placeholder="Расскажите подробнее о вашей услуге..." 
+                              class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl text-xs shadow-lg shadow-blue-600/30 active:scale-98 transition-all flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span id="submitBtnText">Сохранить</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 2: СВЯЗЬ В TELEGRAM -->
+    <div id="orderModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-t-3xl sm:rounded-2xl modal-enter p-5 space-y-4">
+            
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <h3 class="text-sm font-bold text-slate-100">Прямой диалог в Telegram</h3>
+                </div>
+                <button onclick="closeOrderModal()" class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <div id="orderModalContent" class="bg-slate-800/70 border border-slate-700/60 rounded-xl p-3.5 flex items-center space-x-3">
+                <!-- Заполняется JS -->
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Сообщение для исполнителя:</label>
+                <textarea id="orderCustomMessage" rows="3" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+
+            <div class="space-y-2 pt-1">
+                <button onclick="sendSimulatedTelegramMessage()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl text-xs shadow-lg shadow-blue-600/30 active:scale-98 transition-all flex items-center justify-center space-x-2">
+                    <i class="fa-paper-plane fa-solid"></i>
+                    <span>Перейти в чат Telegram</span>
+                </button>
+
+                <button onclick="markDealCompletedFromModal()" class="w-full bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-300 font-semibold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Отметить сделку состоявшейся (Тест)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО 3: ПОДРОБНЫЕ ДЕТАЛИ УСЛУГИ -->
+    <div id="detailsModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto modal-enter p-0 overflow-hidden relative">
+            <button onclick="closeDetailsModal()" class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-slate-900/80 backdrop-blur-md text-slate-200 flex items-center justify-center border border-slate-700">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+            
+            <div id="detailsModalBody">
+                <!-- Вставляется через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-800 border border-blue-500/50 text-slate-100 text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-2xl flex items-center space-x-2 transition-all">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-blue-400"></i>
+        <span id="toastMessage">Действие выполнено</span>
+    </div>
+
+    <!-- JAVASCRIPT ДВИЖОК -->
+    <script>
+        // ИСХОДНЫЕ ДАННЫЕ УСЛУГ
+        const DEFAULT_SERVICES = [
+            {
+                id: "srv_1",
+                title: "Разработка Веб-сайтов и Telegram Mini Apps под ключ",
+                category: "IT и Дизайн",
+                regularPrice: 75000,
+                friendPrice: 50000,
+                description: "Создаю современные сайты, сервисы и боты/Mini Apps на React и Node.js. Быстрые сроки, прозрачная работа и поддержка для проектов друзей.",
+                providerName: "Алексей М.",
+                providerHandle: "@alex_webdev",
+                providerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
+                imageUrl: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=800",
+                views: 240,
+                inquiries: 14,
+                completedDeals: 6,
+                isMyOwn: true,
+                createdAt: Date.now() - 86400000 * 2
+            },
+            {
+                id: "srv_2",
+                title: "Чип-тюнинг ECU, Диагностика и Выхлопные системы",
+                category: "Авто и Тюнинг",
+                regularPrice: 35000,
+                friendPrice: 25000,
+                description: "Программный тюнинг Stage 1/2 для VAG и BMW. Увеличение мощности без вреда для ресурса. Полная компьютерная диагностика в подарок.",
+                providerName: "Дмитрий Т.",
+                providerHandle: "@dmitry_auto",
+                providerAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=120",
+                imageUrl: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=800",
+                views: 195,
+                inquiries: 11,
+                completedDeals: 7,
+                isMyOwn: false,
+                createdAt: Date.now() - 86400000 * 3
+            },
+            {
+                id: "srv_3",
+                title: "Портретная съемка, Контент для брендов и Reels",
+                category: "Фото и Видео",
+                regularPrice: 20000,
+                friendPrice: 14000,
+                description: "Индивидуальные и мобильные фотосессии. Обработка всех фото за 3 дня + монтаж 3 динамичных вертикальных роликов для соцсетей.",
+                providerName: "Мария В.",
+                providerHandle: "@maria_photo",
+                providerAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120",
+                imageUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800",
+                views: 310,
+                inquiries: 22,
+                completedDeals: 11,
+                isMyOwn: false,
+                createdAt: Date.now() - 86400000 * 1
+            },
+            {
+                id: "srv_4",
+                title: "Разговорный Английский и Испанский для IT/Coaching",
+                category: "Обучение",
+                regularPrice: 3500,
+                friendPrice: 2200,
+                description: "Подготовка к собеседованиям в зарубежные компании, снятие языкового барьера. Живое общение на любые интересные темы.",
+                providerName: "Елена Р.",
+                providerHandle: "@elena_polyglot",
+                providerAvatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=120",
+                imageUrl: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800",
+                views: 125,
+                inquiries: 8,
+                completedDeals: 4,
+                isMyOwn: false,
+                createdAt: Date.now() - 86400000 * 10
+            }
+        ];
+
+        const CATEGORIES = ["Все", "IT и Дизайн", "Фото и Видео", "Авто и Тюнинг", "Спорт и Отдых", "Обучение", "Ремонт и Дом", "Юристы и Финансы"];
+
+        // СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+        let services = [];
+        let activeCategory = "Все";
+        let activeTab = "catalog";
+        let selectedOrderService = null;
+        let isAdminMode = true; // По умолчанию включен админ режим для удобства пользователя
+
+        // ИНИЦИАЛИЗАЦИЯ
+        window.addEventListener('DOMContentLoaded', () => {
+            loadServicesFromStorage();
+            updateAdminToggleUI();
+            renderCategoryChips();
+            renderCatalog();
+            updateMyServicesStats();
+            updateAdminDashboard();
+        });
+
+        function toggleAdminMode() {
+            isAdminMode = !isAdminMode;
+            updateAdminToggleUI();
+            renderCatalog();
+            updateMyServicesStats();
+            updateAdminDashboard();
+            showToast(isAdminMode ? "Режим Администратора ВКЛЮЧЕН" : "Режим Администратора ВЫКЛЮЧЕН");
+        }
+
+        function updateAdminToggleUI() {
+            const btn = document.getElementById('adminToggleBtn');
+            const status = document.getElementById('adminToggleStatus');
+            const banner = document.getElementById('adminModeBanner');
+
+            if (isAdminMode) {
+                btn.className = "flex items-center space-x-1.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-sm";
+                status.innerText = "Админ: ВКЛ";
+                banner.classList.remove('hidden');
+            } else {
+                btn.className = "flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all";
+                status.innerText = "Админ: ВЫКЛ";
+                banner.classList.add('hidden');
+            }
+        }
+
+        function loadServicesFromStorage() {
+            const saved = localStorage.getItem('friends_marketplace_ru_services_v2');
+            if (saved) {
+                try {
+                    services = JSON.parse(saved);
+                } catch(e) {
+                    services = DEFAULT_SERVICES;
+                }
+            } else {
+                services = DEFAULT_SERVICES;
+                saveServicesToStorage();
+            }
+        }
+
+        function saveServicesToStorage() {
+            localStorage.setItem('friends_marketplace_ru_services_v2', JSON.stringify(services));
+        }
+
+        function renderCategoryChips() {
+            const container = document.getElementById('categoryChips');
+            container.innerHTML = CATEGORIES.map(cat => {
+                const isActive = cat === activeCategory;
+                return `
+                    <button onclick="setCategory('${cat}')" 
+                            class="whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                isActive 
+                                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' 
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700/80 border border-slate-700/50'
+                            }">
+                        ${cat}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function setCategory(cat) {
+            activeCategory = cat;
+            renderCategoryChips();
+            renderCatalog();
+        }
+
+        // РЕНДЕР КАТАЛОГА
+        function renderCatalog() {
+            const grid = document.getElementById('catalogGrid');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            const sortBy = document.getElementById('sortBy').value;
+
+            let filtered = services.filter(s => {
+                const matchesCat = activeCategory === "Все" || s.category === activeCategory;
+                const matchesSearch = s.title.toLowerCase().includes(searchVal) || 
+                                      s.description.toLowerCase().includes(searchVal) ||
+                                      s.providerName.toLowerCase().includes(searchVal) ||
+                                      s.providerHandle.toLowerCase().includes(searchVal);
+                return matchesCat && matchesSearch;
+            });
+
+            if (sortBy === 'newest') {
+                filtered.sort((a,b) => b.createdAt - a.createdAt);
+            } else if (sortBy === 'discount') {
+                filtered.sort((a,b) => {
+                    const discA = Math.round(((a.regularPrice - a.friendPrice) / a.regularPrice) * 100);
+                    const discB = Math.round(((b.regularPrice - b.friendPrice) / b.regularPrice) * 100);
+                    return discB - discA;
+                });
+            } else if (sortBy === 'priceAsc') {
+                filtered.sort((a,b) => a.friendPrice - b.friendPrice);
+            }
+
+            document.getElementById('resultsCount').innerText = `Найдено услуг: ${filtered.length}`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="text-center py-12 bg-slate-800/40 rounded-2xl border border-dashed border-slate-700 p-6">
+                        <i class="fa-solid fa-magnifying-glass text-3xl text-slate-600 mb-3"></i>
+                        <h3 class="text-sm font-bold text-slate-300">Ничего не найдено</h3>
+                        <p class="text-xs text-slate-500 mt-1 mb-4">Разместите первое объявление в этой категории!</p>
+                        <button onclick="openAddModal()" class="bg-blue-600 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow">
+                            + Разместить услугу
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(s => {
+                const discountPct = Math.round(((s.regularPrice - s.friendPrice) / s.regularPrice) * 100);
+                const canEditOrDelete = isAdminMode || s.isMyOwn;
+                
+                return `
+                    <div class="bg-slate-800 border border-slate-700/80 rounded-2xl overflow-hidden hover:border-slate-600 transition-all shadow-lg flex flex-col justify-between relative">
+                        <div>
+                            <!-- Обложка и кнопки -->
+                            <div class="relative h-44 w-full overflow-hidden bg-slate-900">
+                                <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-90"></div>
+                                
+                                <div class="absolute top-3 left-3 flex items-center space-x-1.5">
+                                    <span class="bg-slate-900/80 backdrop-blur-md text-slate-200 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-700">
+                                        ${s.category}
+                                    </span>
+                                </div>
+
+                                <div class="absolute top-3 right-3 flex items-center space-x-1.5">
+                                    <span class="bg-emerald-500 text-slate-950 font-extrabold text-[11px] px-2.5 py-1 rounded-lg shadow-md flex items-center space-x-1">
+                                        <i class="fa-solid fa-bolt text-[10px]"></i>
+                                        <span>-${discountPct}%</span>
+                                    </span>
+                                </div>
+
+                                <!-- Панель администратора / владельца на обложке -->
+                                ${canEditOrDelete ? `
+                                    <div class="absolute top-12 right-3 flex items-center space-x-1 bg-slate-900/90 backdrop-blur-md border ${isAdminMode ? 'border-amber-500/60' : 'border-slate-700'} rounded-lg p-1 shadow-lg z-10">
+                                        ${isAdminMode ? '<span class="text-[9px] font-bold text-amber-400 px-1">АДМИН:</span>' : ''}
+                                        <button onclick="openEditModal('${s.id}')" title="Редактировать" class="p-1.5 text-slate-300 hover:text-blue-400 rounded transition-colors">
+                                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        </button>
+                                        <button onclick="deleteService('${s.id}')" title="Удалить" class="p-1.5 text-slate-300 hover:text-red-400 rounded transition-colors">
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                    </div>
+                                ` : ''}
+
+                                <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <img src="${s.providerAvatar}" class="w-7 h-7 rounded-full border border-blue-400 object-cover">
+                                        <div>
+                                            <span class="text-xs font-bold text-white block leading-tight">${s.providerName || 'Друг'}</span>
+                                            <span class="text-[10px] text-blue-300 font-mono">${s.providerHandle}</span>
+                                        </div>
+                                    </div>
+                                    ${s.isMyOwn ? '<span class="bg-blue-500/30 text-blue-300 text-[9px] font-bold px-2 py-0.5 rounded border border-blue-400/40">Мое</span>' : ''}
+                                </div>
+                            </div>
+
+                            <!-- Описание -->
+                            <div class="p-4 space-y-2">
+                                <h3 class="text-sm font-bold text-slate-100 leading-snug line-clamp-2">${s.title}</h3>
+                                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">${s.description}</p>
+                            </div>
+                        </div>
+
+                        <!-- Цены и действия -->
+                        <div class="p-4 pt-0">
+                            <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-700/50 flex items-center justify-between mb-3">
+                                <div>
+                                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Для своих</span>
+                                    <div class="flex items-baseline space-x-2">
+                                        <span class="text-lg font-black text-emerald-400">${s.friendPrice.toLocaleString()} ₽</span>
+                                        <span class="text-xs text-slate-500 line-through font-medium">${s.regularPrice.toLocaleString()} ₽</span>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] text-emerald-400/90 font-medium block">Выгода</span>
+                                    <span class="text-xs font-bold text-emerald-400">${(s.regularPrice - s.friendPrice).toLocaleString()} ₽</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="openDetailsModal('${s.id}')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold py-2.5 rounded-xl transition-all">
+                                    Подробнее
+                                </button>
+                                <button onclick="openOrderModal('${s.id}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl shadow-md shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center space-x-1.5">
+                                    <i class="fa-paper-plane fa-solid text-[10px]"></i>
+                                    <span>Связаться</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // МОИ УСЛУГИ
+        function updateMyServicesStats() {
+            const myServices = services.filter(s => s.isMyOwn);
+            document.getElementById('myListingsCount').innerText = myServices.length;
+
+            let totalViews = 0, totalInquiries = 0, totalDeals = 0, totalEarned = 0;
+            myServices.forEach(s => {
+                totalViews += (s.views || 0);
+                totalInquiries += (s.inquiries || 0);
+                totalDeals += (s.completedDeals || 0);
+                totalEarned += ((s.completedDeals || 0) * s.friendPrice);
+            });
+
+            document.getElementById('statViews').innerText = totalViews;
+            document.getElementById('statInquiries').innerText = totalInquiries;
+            document.getElementById('statDeals').innerText = totalDeals;
+            document.getElementById('statEarned').innerText = `${totalEarned.toLocaleString()} ₽`;
+
+            const list = document.getElementById('myServicesList');
+            if (myServices.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-8 bg-slate-800/40 rounded-2xl border border-slate-700 p-4">
+                        <p class="text-xs text-slate-400">У вас нет активных публикаций.</p>
+                        <button onclick="openAddModal()" class="mt-3 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-xl">
+                            + Разместить услугу
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = myServices.map(s => `
+                <div class="bg-slate-800 border border-slate-700 rounded-xl p-3.5 flex items-center justify-between">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <img src="${s.imageUrl}" class="w-12 h-12 rounded-lg object-cover flex-shrink-0 bg-slate-900">
+                        <div class="min-w-0">
+                            <h4 class="text-xs font-bold text-slate-100 truncate">${s.title}</h4>
+                            <div class="flex items-center space-x-2 text-[10px] text-slate-400 mt-0.5">
+                                <span class="text-emerald-400 font-bold">${s.friendPrice.toLocaleString()} ₽</span>
+                                <span>•</span>
+                                <span>${s.completedDeals || 0} Сделок</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1.5 flex-shrink-0 ml-2">
+                        <button onclick="openEditModal('${s.id}')" class="p-2 text-slate-400 hover:text-blue-400 bg-slate-700/50 rounded-lg">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        <button onclick="deleteService('${s.id}')" class="p-2 text-slate-400 hover:text-red-400 bg-slate-700/50 rounded-lg">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // АДМИН ПАНЕЛЬ I МЕДЕРАЦИЯ
+        function updateAdminDashboard() {
+            let totalGMV = 0;
+            let totalDeals = 0;
+
+            services.forEach(s => {
+                const deals = s.completedDeals || 0;
+                totalDeals += deals;
+                totalGMV += (deals * s.friendPrice);
+            });
+
+            document.getElementById('adminGMV').innerText = `${totalGMV.toLocaleString()} ₽`;
+            document.getElementById('adminDealsCount').innerText = totalDeals;
+            document.getElementById('adminActiveCount').innerText = `Публикаций: ${services.length}`;
+
+            const adminListingsContainer = document.getElementById('adminListingsManager');
+            if (services.length === 0) {
+                adminListingsContainer.innerHTML = `<div class="text-xs text-slate-400 py-2">Нет публикаций для модерации.</div>`;
+            } else {
+                adminListingsContainer.innerHTML = services.map(s => `
+                    <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-2.5 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5 min-w-0">
+                            <img src="${s.imageUrl}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-slate-200 truncate">${s.title}</div>
+                                <div class="text-[10px] text-slate-400 flex items-center space-x-2">
+                                    <span>${s.providerName || 'Друг'} (${s.providerHandle})</span>
+                                    <span>•</span>
+                                    <span class="text-emerald-400 font-semibold">${s.friendPrice.toLocaleString()} ₽</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1 ml-2 flex-shrink-0">
+                            <button onclick="openEditModal('${s.id}')" class="px-2 py-1 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-lg text-xs hover:bg-blue-600/30">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteService('${s.id}')" class="px-2 py-1 bg-red-600/20 text-red-400 border border-red-500/30 rounded-lg text-xs hover:bg-red-600/30">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            updateCommissionSimulation();
+        }
+
+        function updateCommissionSimulation() {
+            const rate = parseInt(document.getElementById('commissionRange').value);
+            document.getElementById('commissionRateLabel').innerText = `${rate}%`;
+
+            let totalGMV = 0;
+            let totalRegular = 0;
+            services.forEach(s => {
+                const deals = s.completedDeals || 0;
+                totalGMV += (deals * s.friendPrice);
+                totalRegular += (deals * s.regularPrice);
+            });
+
+            const totalRev = totalGMV * (rate / 100);
+            const monthlyRev = totalRev / 3;
+            const totalSaved = totalRegular - totalGMV;
+
+            document.getElementById('simTotalRevenue').innerText = `${Math.round(totalRev).toLocaleString()} ₽`;
+            document.getElementById('simMonthlyRevenue').innerText = `${Math.round(monthlyRev).toLocaleString()} ₽ / мес`;
+            document.getElementById('simTotalSaved').innerText = `${Math.round(totalSaved).toLocaleString()} ₽`;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+
+            document.getElementById('viewCatalog').classList.add('hidden');
+            document.getElementById('viewMyServices').classList.add('hidden');
+            document.getElementById('viewAdmin').classList.add('hidden');
+
+            ['Catalog', 'MyServices', 'Admin'].forEach(t => {
+                const navBtn = document.getElementById(`nav${t}`);
+                const icon = document.getElementById(`navIcon${t}`);
+                if (navBtn) navBtn.className = 'flex flex-col items-center space-y-1 text-slate-400 transition-all';
+                if (icon) icon.classList.remove('active-tab-icon');
+            });
+
+            if (tab === 'catalog') {
+                document.getElementById('viewCatalog').classList.remove('hidden');
+                document.getElementById('navCatalog').className = 'flex flex-col items-center space-y-1 text-blue-400 active-tab transition-all';
+                document.getElementById('navIconCatalog').classList.add('active-tab-icon');
+                renderCatalog();
+            } else if (tab === 'myServices') {
+                document.getElementById('viewMyServices').classList.remove('hidden');
+                document.getElementById('navMyServices').className = 'flex flex-col items-center space-y-1 text-blue-400 active-tab transition-all';
+                document.getElementById('navIconMyServices').classList.add('active-tab-icon');
+                updateMyServicesStats();
+            } else if (tab === 'admin') {
+                document.getElementById('viewAdmin').classList.remove('hidden');
+                document.getElementById('navAdmin').className = 'flex flex-col items-center space-y-1 text-purple-400 active-tab transition-all';
+                document.getElementById('navIconAdmin').classList.add('active-tab-icon');
+                updateAdminDashboard();
+            }
+        }
+
+        // СОЗДАНИЕ И РЕДАКТИРОВАНИЕ
+        function openAddModal() {
+            document.getElementById('modalTitle').innerText = "Разместить услугу";
+            document.getElementById('submitBtnText').innerText = "Опубликовать в маркетплейсе";
+            document.getElementById('editServiceId').value = "";
+            document.getElementById('serviceForm').reset();
+            document.getElementById('formProviderName').value = "Алексей М.";
+            document.getElementById('formHandle').value = "@alex_webdev";
+            calculateModalDiscount();
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+
+        function openEditModal(serviceId) {
+            const s = services.find(item => item.id === serviceId);
+            if (!s) return;
+
+            document.getElementById('modalTitle').innerText = isAdminMode ? "Редактирование (Администратор)" : "Редактировать услугу";
+            document.getElementById('submitBtnText').innerText = "Сохранить изменения";
+            document.getElementById('editServiceId').value = s.id;
+            document.getElementById('formTitle').value = s.title;
+            document.getElementById('formProviderName').value = s.providerName || '';
+            document.getElementById('formCategory').value = s.category;
+            document.getElementById('formHandle').value = s.providerHandle;
+            document.getElementById('formRegularPrice').value = s.regularPrice;
+            document.getElementById('formFriendPrice').value = s.friendPrice;
+            document.getElementById('formImageUrl').value = s.imageUrl;
+            document.getElementById('formDescription').value = s.description;
+
+            calculateModalDiscount();
+            document.getElementById('addModal').classList.remove('hidden');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').classList.add('hidden');
+        }
+
+        function calculateModalDiscount() {
+            const reg = parseFloat(document.getElementById('formRegularPrice').value) || 0;
+            const friend = parseFloat(document.getElementById('formFriendPrice').value) || 0;
+            const badge = document.getElementById('calculatedDiscountBadge');
+
+            if (reg > 0 && friend > 0 && friend < reg) {
+                const pct = Math.round(((reg - friend) / reg) * 100);
+                badge.innerText = `${pct}% СКИДКА`;
+                badge.className = "font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+            } else {
+                badge.innerText = "0% СКИДКА";
+                badge.className = "font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700";
+            }
+        }
+
+        function setPresetImage(type) {
+            const input = document.getElementById('formImageUrl');
+            if (type === 'tech') input.value = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800";
+            if (type === 'photo') input.value = "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800";
+            if (type === 'auto') input.value = "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?auto=format&fit=crop&q=80&w=800";
+            if (type === 'sport') input.value = "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&q=80&w=800";
+        }
+
+        function handleSaveService(e) {
+            e.preventDefault();
+
+            const editId = document.getElementById('editServiceId').value;
+            const title = document.getElementById('formTitle').value.trim();
+            const providerName = document.getElementById('formProviderName').value.trim() || "Участник";
+            const category = document.getElementById('formCategory').value;
+            const handle = document.getElementById('formHandle').value.trim();
+            const regPrice = parseFloat(document.getElementById('formRegularPrice').value);
+            const friendPrice = parseFloat(document.getElementById('formFriendPrice').value);
+            let imageUrl = document.getElementById('formImageUrl').value.trim();
+            const description = document.getElementById('formDescription').value.trim();
+
+            if (!imageUrl) {
+                imageUrl = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800";
+            }
+
+            if (editId) {
+                const idx = services.findIndex(s => s.id === editId);
+                if (idx !== -1) {
+                    services[idx] = {
+                        ...services[idx],
+                        title, 
+                        providerName,
+                        category, 
+                        providerHandle: handle.startsWith('@') ? handle : '@' + handle, 
+                        regularPrice: regPrice,
+                        friendPrice, 
+                        imageUrl, 
+                        description
+                    };
+                    showToast("Услуга успешно обновлена!");
+                }
+            } else {
+                const newService = {
+                    id: "srv_" + Date.now(),
+                    title,
+                    category,
+                    regularPrice: regPrice,
+                    friendPrice: friendPrice,
+                    description,
+                    providerName,
+                    providerHandle: handle.startsWith('@') ? handle : '@' + handle,
+                    providerAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120",
+                    imageUrl,
+                    views: 1,
+                    inquiries: 0,
+                    completedDeals: 0,
+                    isMyOwn: true,
+                    createdAt: Date.now()
+                };
+                services.unshift(newService);
+                showToast("Новая услуга опубликована!");
+            }
+
+            saveServicesToStorage();
+            closeAddModal();
+            
+            renderCatalog();
+            updateMyServicesStats();
+            updateAdminDashboard();
+        }
+
+        // УДАЛЕНИЕ ОБЪЯВЛЕНИЯ
+        function deleteService(serviceId) {
+            const serviceToDelete = services.find(s => s.id === serviceId);
+            if (!serviceToDelete) return;
+
+            const confirmMsg = isAdminMode 
+                ? `[АДМИН]: Удалить объявление "${serviceToDelete.title}"?` 
+                : `Вы действительно хотите удалить услугу "${serviceToDelete.title}"?`;
+
+            if (confirm(confirmMsg)) {
+                services = services.filter(s => s.id !== serviceId);
+                saveServicesToStorage();
+                showToast("Объявление успешно удалено.");
+                
+                renderCatalog();
+                updateMyServicesStats();
+                updateAdminDashboard();
+            }
+        }
+
+        function openOrderModal(serviceId) {
+            const s = services.find(item => item.id === serviceId);
+            if (!s) return;
+
+            selectedOrderService = s;
+            s.views = (s.views || 0) + 1;
+            saveServicesToStorage();
+
+            const modalContent = document.getElementById('orderModalContent');
+            modalContent.innerHTML = `
+                <img src="${s.providerAvatar}" class="w-10 h-10 rounded-full border border-blue-400 object-cover flex-shrink-0">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-100">${s.providerName || 'Друг'} (${s.providerHandle})</div>
+                    <div class="text-[11px] text-slate-300 truncate">${s.title}</div>
+                    <div class="text-xs font-bold text-emerald-400 mt-0.5">${s.friendPrice.toLocaleString()} ₽ <span class="text-[10px] text-slate-400 line-through font-normal">${s.regularPrice.toLocaleString()} ₽</span></div>
+                </div>
+            `;
+
+            document.getElementById('orderCustomMessage').value = `Привет, ${s.providerName || 'друг'}! Нашел твоё объявление "${s.title}" в нашем боте. Хочу заказать со скидкой (${s.friendPrice.toLocaleString()} ₽)!`;
+
+            document.getElementById('orderModal').classList.remove('hidden');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.add('hidden');
+        }
+
+        function sendSimulatedTelegramMessage() {
+            if (!selectedOrderService) return;
+
+            selectedOrderService.inquiries = (selectedOrderService.inquiries || 0) + 1;
+            saveServicesToStorage();
+
+            const handle = selectedOrderService.providerHandle.replace('@', '');
+            const msg = encodeURIComponent(document.getElementById('orderCustomMessage').value);
+            
+            window.open(`https://t.me/${handle}?text=${msg}`, '_blank');
+
+            closeOrderModal();
+            showToast(`Переход в диалог с ${selectedOrderService.providerHandle}...`);
+        }
+
+        function markDealCompletedFromModal() {
+            if (!selectedOrderService) return;
+
+            selectedOrderService.completedDeals = (selectedOrderService.completedDeals || 0) + 1;
+            saveServicesToStorage();
+
+            closeOrderModal();
+            showToast(`Сделка засчитана! +${selectedOrderService.friendPrice.toLocaleString()} ₽ в оборот.`);
+            
+            updateMyServicesStats();
+            updateAdminDashboard();
+        }
+
+        function openDetailsModal(serviceId) {
+            const s = services.find(item => item.id === serviceId);
+            if (!s) return;
+
+            const discountPct = Math.round(((s.regularPrice - s.friendPrice) / s.regularPrice) * 100);
+            const canEditOrDelete = isAdminMode || s.isMyOwn;
+
+            const body = document.getElementById('detailsModalBody');
+            body.innerHTML = `
+                <div class="relative h-56 w-full bg-slate-900">
+                    <img src="${s.imageUrl}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/30 to-transparent"></div>
+                    <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-2.5">
+                            <img src="${s.providerAvatar}" class="w-10 h-10 rounded-full border-2 border-blue-400 object-cover">
+                            <div>
+                                <h4 class="text-sm font-bold text-white">${s.providerName || 'Друг'}</h4>
+                                <span class="text-xs text-blue-300 font-mono">${s.providerHandle}</span>
+                            </div>
+                        </div>
+                        <span class="bg-emerald-500 text-slate-950 text-xs font-extrabold px-2.5 py-1 rounded-lg">
+                            -${discountPct}% ДЛЯ СВОИХ
+                        </span>
+                    </div>
+                </div>
+
+                <div class="p-5 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] uppercase font-semibold text-blue-400 tracking-wider">${s.category}</span>
+                            <h2 class="text-base font-bold text-slate-100 mt-0.5">${s.title}</h2>
+                        </div>
+                    </div>
+
+                    ${canEditOrDelete ? `
+                        <div class="bg-amber-500/10 border border-amber-500/30 p-2.5 rounded-xl flex items-center justify-between">
+                            <span class="text-xs font-medium text-amber-300">Управление публикацией:</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="closeDetailsModal(); openEditModal('${s.id}')" class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-lg text-xs font-semibold">
+                                    <i class="fa-solid fa-pen-to-square"></i> Изменить
+                                </button>
+                                <button onclick="closeDetailsModal(); deleteService('${s.id}')" class="bg-red-500/20 text-red-300 border border-red-500/40 px-3 py-1 rounded-lg text-xs font-semibold">
+                                    <i class="fa-solid fa-trash-can"></i> Удалить
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="bg-slate-800/80 border border-slate-700/60 rounded-xl p-3.5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Спеццена для своих</span>
+                            <span class="text-2xl font-black text-emerald-400">${s.friendPrice.toLocaleString()} ₽</span>
+                            <span class="text-xs text-slate-500 line-through ml-1.5">${s.regularPrice.toLocaleString()} ₽</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-semibold text-slate-300 block">Завершенных заказов</span>
+                            <span class="text-sm font-bold text-blue-400">${s.completedDeals || 0} сделок</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-semibold text-slate-300 mb-1">Описание услуги</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed bg-slate-800/40 p-3 rounded-xl border border-slate-700/40 whitespace-pre-line">${s.description}</p>
+                    </div>
+
+                    <div class="pt-2 grid grid-cols-2 gap-2">
+                        <button onclick="closeDetailsModal()" class="bg-slate-800 text-slate-300 text-xs font-semibold py-3 rounded-xl">
+                            Назад к списку
+                        </button>
+                        <button onclick="closeDetailsModal(); openOrderModal('${s.id}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-3 rounded-xl shadow-lg shadow-blue-600/30">
+                            Связаться / Заказать
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        function handleSearch() {
+            const input = document.getElementById('searchInput').value;
+            const clearBtn = document.getElementById('clearSearch');
+            
+            if (input.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderCatalog();
+        }
+
+        function clearSearchInput() {
+            document.getElementById('searchInput').value = "";
+            document.getElementById('clearSearch').classList.add('hidden');
+            renderCatalog();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2800);
+        }
+    </script>
+</body>
+</html>
