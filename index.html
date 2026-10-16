@@ -136,24 +136,31 @@
             </div>
 
             <!-- Stats Block -->
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-tg-card p-3.5 rounded-2xl border border-white/5">
-                    <div class="text-tg-hint text-xs">Участников (авторов)</div>
-                    <div id="adminStatUsers" class="text-xl font-bold text-tg-text mt-1">0</div>
+            <div class="grid grid-cols-3 gap-2">
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
+                    <div class="text-tg-hint text-[10px]">Всего зашли</div>
+                    <div id="adminStatTotalUsers" class="text-lg font-bold text-tg-accent mt-0.5">0</div>
                 </div>
-                <div class="bg-tg-card p-3.5 rounded-2xl border border-white/5">
-                    <div class="text-tg-hint text-xs">Всего объявлений</div>
-                    <div id="adminStatOffers" class="text-xl font-bold text-tg-text mt-1">0</div>
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
+                    <div class="text-tg-hint text-[10px]">С публикацией</div>
+                    <div id="adminStatAuthors" class="text-lg font-bold text-emerald-400 mt-0.5">0</div>
+                </div>
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
+                    <div class="text-tg-hint text-[10px]">Объявлений</div>
+                    <div id="adminStatOffers" class="text-lg font-bold text-tg-text mt-0.5">0</div>
                 </div>
             </div>
 
             <!-- Connected Users List -->
             <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
-                <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
-                    <i class="fa-solid fa-users text-tg-accent"></i>
-                    <span>Активные участники (авторы)</span>
+                <h3 class="font-bold text-sm text-tg-text flex items-center justify-between">
+                    <span class="flex items-center space-x-2">
+                        <i class="fa-solid fa-users text-tg-accent"></i>
+                        <span>Все участники приложения</span>
+                    </span>
+                    <span id="allUsersBadge" class="text-xs bg-tg-accent/10 text-tg-accent px-2 py-0.5 rounded-full">0</span>
                 </h3>
-                <div id="adminUsersList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div id="adminUsersList" class="space-y-2 max-h-56 overflow-y-auto pr-1">
                     <!-- Populated dynamically -->
                 </div>
             </div>
@@ -253,7 +260,7 @@
     <!-- Firebase SDK Setup & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -307,7 +314,25 @@
             document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
 
+        // Register / Update connected user in Firebase
+        async function registerUserPresence() {
+            if (!isFirebaseConnected || !db || !currentUser) return;
+            try {
+                const userRef = doc(db, "app_users", String(currentUser.id));
+                await setDoc(userRef, {
+                    id: currentUser.id,
+                    name: currentUser.first_name || 'Без имени',
+                    username: currentUser.username || 'unknown',
+                    photo_url: currentUser.photo_url || '',
+                    lastSeen: Date.now()
+                }, { merge: true });
+            } catch (err) {
+                console.error("Error registering user presence:", err);
+            }
+        }
+
         let allServices = [];
+        let allUsers = [];
         let currentCategory = 'all';
 
         function initRealtimeSync() {
@@ -320,8 +345,12 @@
                 return;
             }
 
-            const q = query(collection(db, "services"), orderBy("createdAt", "desc"));
-            onSnapshot(q, (snapshot) => {
+            // Sync users presence
+            registerUserPresence();
+
+            // Realtime query for services
+            const qServices = query(collection(db, "services"), orderBy("createdAt", "desc"));
+            onSnapshot(qServices, (snapshot) => {
                 allServices = [];
                 snapshot.forEach((docSnap) => {
                     allServices.push({ id: docSnap.id, ...docSnap.data() });
@@ -330,8 +359,16 @@
                 renderMyServices();
                 if (isAdmin) renderAdminPanel();
                 document.getElementById('totalOffersCount').textContent = allServices.length;
-            }, (error) => {
-                console.error("Firestore sync error:", error);
+            });
+
+            // Realtime query for all app users
+            const qUsers = collection(db, "app_users");
+            onSnapshot(qUsers, (snapshot) => {
+                allUsers = [];
+                snapshot.forEach((docSnap) => {
+                    allUsers.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                if (isAdmin) renderAdminPanel();
             });
         }
 
@@ -393,36 +430,56 @@
         }
 
         function renderAdminPanel() {
-            // Stats calculation
-            const usersMap = {};
+            // Authors map
+            const authorsMap = {};
             allServices.forEach(s => {
-                const uname = s.authorUsername || 'unknown';
-                if (!usersMap[uname]) {
-                    usersMap[uname] = { count: 0, name: s.authorName || uname };
-                }
-                usersMap[uname].count++;
+                const uname = (s.authorUsername || 'unknown').toLowerCase();
+                authorsMap[uname] = (authorsMap[uname] || 0) + 1;
             });
 
-            const uniqueUsersCount = Object.keys(usersMap).length;
-            document.getElementById('adminStatUsers').textContent = uniqueUsersCount;
-            document.getElementById('adminStatOffers').textContent = allServices.length;
+            const totalUsersCount = Math.max(allUsers.length, Object.keys(authorsMap).length);
+            const authorsCount = Object.keys(authorsMap).length;
 
-            // Render users list
+            document.getElementById('adminStatTotalUsers').textContent = totalUsersCount;
+            document.getElementById('adminStatAuthors').textContent = authorsCount;
+            document.getElementById('adminStatOffers').textContent = allServices.length;
+            document.getElementById('allUsersBadge').textContent = totalUsersCount;
+
+            // Render combined users list
             const usersContainer = document.getElementById('adminUsersList');
-            if (uniqueUsersCount === 0) {
-                usersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет активных авторов.</p>`;
+            
+            // Merge Firestore users with service authors for complete coverage
+            const combinedUsers = [...allUsers];
+            Object.keys(authorsMap).forEach(uname => {
+                if (!combinedUsers.some(u => (u.username || '').toLowerCase() === uname)) {
+                    combinedUsers.push({ username: uname, name: uname, lastSeen: Date.now() });
+                }
+            });
+
+            if (combinedUsers.length === 0) {
+                usersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет участников.</p>`;
             } else {
-                usersContainer.innerHTML = Object.entries(usersMap).map(([uname, data]) => `
-                    <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 rounded-full bg-tg-accent/10 text-tg-accent flex items-center justify-center font-bold">
-                                <i class="fa-solid fa-user text-[10px]"></i>
+                usersContainer.innerHTML = combinedUsers.map(u => {
+                    const uname = u.username || 'unknown';
+                    const offersNum = authorsMap[uname.toLowerCase()] || 0;
+                    return `
+                        <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
+                            <div class="flex items-center space-x-2 min-w-0 pr-2">
+                                <div class="w-6 h-6 rounded-full bg-tg-accent/10 text-tg-accent flex items-center justify-center font-bold flex-shrink-0 overflow-hidden">
+                                    ${u.photo_url ? `<img src="${u.photo_url}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
+                                </div>
+                                <span class="font-medium text-tg-text truncate">@${uname}</span>
                             </div>
-                            <span class="font-medium text-tg-text">@${uname}</span>
+                            <div class="flex items-center space-x-2 flex-shrink-0">
+                                ${offersNum > 0 ? 
+                                    `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Автор (${offersNum})</span>` : 
+                                    `<span class="text-[10px] bg-tg-card text-tg-hint px-2 py-0.5 rounded-full">Зритель</span>`
+                                }
+                                <a href="https://t.me/${uname}" target="_blank" class="text-tg-accent hover:underline text-[11px]"><i class="fa-solid fa-paper-plane"></i></a>
+                            </div>
                         </div>
-                        <div class="text-tg-hint">Объявлений: <span class="text-tg-accent font-bold">${data.count}</span></div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             // Render moderation list
