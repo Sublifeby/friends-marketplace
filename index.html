@@ -130,12 +130,43 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-base text-red-400">Панель администратора</h2>
-                        <p class="text-xs text-tg-hint">Полный контроль всех объявлений сообщества</p>
+                        <p class="text-xs text-tg-hint">Статистика и модерация сообщества</p>
                     </div>
                 </div>
             </div>
-            <div class="space-y-3" id="adminServicesList">
-                <!-- Admin moderation list -->
+
+            <!-- Stats Block -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-tg-card p-3.5 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-xs">Участников (авторов)</div>
+                    <div id="adminStatUsers" class="text-xl font-bold text-tg-text mt-1">0</div>
+                </div>
+                <div class="bg-tg-card p-3.5 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-xs">Всего объявлений</div>
+                    <div id="adminStatOffers" class="text-xl font-bold text-tg-text mt-1">0</div>
+                </div>
+            </div>
+
+            <!-- Connected Users List -->
+            <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
+                <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
+                    <i class="fa-solid fa-users text-tg-accent"></i>
+                    <span>Активные участники (авторы)</span>
+                </h3>
+                <div id="adminUsersList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Moderation List -->
+            <div class="space-y-3">
+                <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2 px-1">
+                    <i class="fa-solid fa-list-check text-tg-accent"></i>
+                    <span>Управление всеми объявлениями</span>
+                </h3>
+                <div id="adminServicesList" class="space-y-3">
+                    <!-- Admin moderation list -->
+                </div>
             </div>
         </section>
 
@@ -362,9 +393,42 @@
         }
 
         function renderAdminPanel() {
+            // Stats calculation
+            const usersMap = {};
+            allServices.forEach(s => {
+                const uname = s.authorUsername || 'unknown';
+                if (!usersMap[uname]) {
+                    usersMap[uname] = { count: 0, name: s.authorName || uname };
+                }
+                usersMap[uname].count++;
+            });
+
+            const uniqueUsersCount = Object.keys(usersMap).length;
+            document.getElementById('adminStatUsers').textContent = uniqueUsersCount;
+            document.getElementById('adminStatOffers').textContent = allServices.length;
+
+            // Render users list
+            const usersContainer = document.getElementById('adminUsersList');
+            if (uniqueUsersCount === 0) {
+                usersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет активных авторов.</p>`;
+            } else {
+                usersContainer.innerHTML = Object.entries(usersMap).map(([uname, data]) => `
+                    <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-full bg-tg-accent/10 text-tg-accent flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-user text-[10px]"></i>
+                            </div>
+                            <span class="font-medium text-tg-text">@${uname}</span>
+                        </div>
+                        <div class="text-tg-hint">Объявлений: <span class="text-tg-accent font-bold">${data.count}</span></div>
+                    </div>
+                `).join('');
+            }
+
+            // Render moderation list
             const container = document.getElementById('adminServicesList');
             if (allServices.length === 0) {
-                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-8">Нет объявлений для модерации.</p>`;
+                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Нет объявлений для модерации.</p>`;
                 return;
             }
             container.innerHTML = allServices.map(s => `
@@ -479,7 +543,6 @@
             document.getElementById('serviceModal').classList.add('hidden');
         };
 
-        // Local Client-Side Image Compression & Processing (100% reliable)
         window.compressAndSelectImage = function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -514,7 +577,6 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Convert to compressed JPEG data URL
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
                     document.getElementById('serviceImage').value = dataUrl;
                     statusEl.textContent = "✓ Фото успешно готово!";
