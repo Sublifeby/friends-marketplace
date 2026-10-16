@@ -103,7 +103,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-tg-hint">Скидка для участников</div>
-                    <div class="text-emerald-400 font-bold">до −99%</div>
+                    <div class="text-emerald-400 font-bold">до −20%</div>
                 </div>
             </div>
 
@@ -366,7 +366,6 @@
             document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
 
-        // Favorites management via localStorage
         function getFavorites() {
             try {
                 return JSON.parse(localStorage.getItem('sublife_favorites') || '[]');
@@ -386,11 +385,6 @@
             localStorage.setItem('sublife_favorites', JSON.stringify(favs));
             renderCatalog();
             renderMyServices();
-            // Update detail modal if open
-            const detailModal = document.getElementById('detailModal');
-            if (detailModal && !detailModal.classList.contains('hidden')) {
-                // Refresh heart state if needed
-            }
         };
 
         async function registerUserPresenceAndLaunch() {
@@ -502,7 +496,6 @@
 
             let filtered = allServices.filter(s => {
                 const status = s.status || 'active';
-                // Regular catalog only shows active items (unless viewing favorites)
                 if (status === 'archived' && currentCategory !== 'favorites') return false;
 
                 if (currentCategory === 'favorites') {
@@ -516,14 +509,12 @@
                 return s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
             });
 
-            // Sorting
             filtered.sort((a, b) => {
                 if (sortMode === 'price_asc') {
                     return parsePrice(a.price) - parsePrice(b.price);
                 } else if (sortMode === 'price_desc') {
                     return parsePrice(b.price) - parsePrice(a.price);
                 } else {
-                    // newest
                     return (b.createdAt || 0) - (a.createdAt || 0);
                 }
             });
@@ -619,7 +610,6 @@
                 }).join('');
             }
 
-            // Admin moderation list filtered by status
             const container = document.getElementById('adminServicesList');
             let filteredAdminServices = allServices.filter(s => {
                 const st = s.status || 'active';
@@ -902,6 +892,8 @@
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Сохранение...`;
 
             const id = document.getElementById('editServiceId').value;
+            const existingService = id ? allServices.find(item => item.id === id) : null;
+
             const data = {
                 name: document.getElementById('serviceName').value,
                 category: document.getElementById('serviceCategory').value,
@@ -911,11 +903,12 @@
                 shortDesc: document.getElementById('serviceShortDesc').value,
                 desc: document.getElementById('serviceDesc').value,
                 imageUrl: document.getElementById('serviceImage').value,
-                authorId: currentUser.id,
-                authorName: currentUser.first_name,
-                authorUsername: currentUser.username || 'user',
-                authorAvatar: currentUser.photo_url || '',
-                createdAt: Date.now()
+                // Сохраняем оригинального автора при редактировании, иначе ставим текущего пользователя
+                authorId: existingService ? existingService.authorId : currentUser.id,
+                authorName: existingService ? existingService.authorName : currentUser.first_name,
+                authorUsername: existingService ? existingService.authorUsername : (currentUser.username || 'user'),
+                authorAvatar: existingService ? existingService.authorAvatar : (currentUser.photo_url || ''),
+                createdAt: existingService ? (existingService.createdAt || Date.now()) : Date.now()
             };
 
             try {
