@@ -95,7 +95,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-tg-hint">Скидка для участников</div>
-                    <div class="text-emerald-400 font-bold">до −90%</div>
+                    <div class="text-emerald-400 font-bold">до −20%</div>
                 </div>
             </div>
 
@@ -395,10 +395,14 @@
                 snapshot.forEach((docSnap) => {
                     allServices.push({ id: docSnap.id, ...docSnap.data() });
                 });
+                
+                // Гарантированное обновление счетчика на главной
+                const counterEl = document.getElementById('totalOffersCount');
+                if (counterEl) counterEl.textContent = allServices.length;
+
                 renderCatalog();
                 renderMyServices();
                 if (isAdmin) renderAdminPanel();
-                document.getElementById('totalOffersCount').textContent = allServices.length;
             });
 
             const qUsers = collection(db, "app_users");
@@ -487,7 +491,6 @@
             document.getElementById('adminStatTotalViews').textContent = totalViews;
             document.getElementById('adminStatTotalUsers').textContent = totalUsersCount;
             document.getElementById('adminStatAuthors').textContent = authorsCount;
-            document.getElementById('adminStatOffers').textContent = allServices.length;
             document.getElementById('allUsersBadge').textContent = totalUsersCount;
 
             const usersContainer = document.getElementById('adminUsersList');
@@ -552,6 +555,7 @@
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
             const canManage = showControls || isOwner || isAdmin;
             const displayShortDesc = s.shortDesc || s.desc || '';
+            const contactUrl = `https://t.me/${s.authorUsername || ''}?text=${encodeURIComponent('Здравствуйте! Меня заинтересовало ваше объявление: ' + s.name)}`;
             
             return `
                 <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99]">
@@ -585,10 +589,10 @@
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 ` : ''}
-                                <button onclick="openDetailModal('${s.id}')" class="bg-tg-button text-tg-buttonText px-3 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1 shadow-md shadow-tg-button/20">
-                                    <span>Открыть</span>
-                                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                                </button>
+                                <a href="${contactUrl}" onclick="trackServiceClick('${s.id}')" target="_blank" class="bg-tg-button text-tg-buttonText px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 shadow-md shadow-tg-button/20">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Связаться</span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -604,6 +608,7 @@
 
             const container = document.getElementById('detailContent');
             const fullDesc = s.desc || s.shortDesc || '';
+            const contactUrl = `https://t.me/${s.authorUsername || ''}?text=${encodeURIComponent('Здравствуйте! Меня заинтересовало ваше объявление: ' + s.name)}`;
 
             container.innerHTML = `
                 <div class="relative">
@@ -646,7 +651,7 @@
                     </div>
 
                     <div class="pt-2">
-                        <a href="https://t.me/${s.authorUsername || ''}" target="_blank" class="w-full bg-tg-button text-tg-buttonText font-medium py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-tg-button/20 active:scale-95 transition-transform">
+                        <a href="${contactUrl}" target="_blank" class="w-full bg-tg-button text-tg-buttonText font-medium py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-tg-button/20 active:scale-95 transition-transform">
                             <i class="fa-solid fa-paper-plane"></i>
                             <span>Связаться в Telegram</span>
                         </a>
@@ -765,7 +770,7 @@
                 };
                 img.src = event.target.result;
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(dataUrlOrFile => reader.readAsDataURL(file)); // syntax safety
         };
 
         window.saveService = async function(e) {
@@ -818,6 +823,7 @@
             }
         };
 
+        initRealtestSync = initRealtimeSync;
         initRealtimeSync();
     </script>
 </body>
