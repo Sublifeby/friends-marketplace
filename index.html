@@ -42,7 +42,7 @@
 
     <!-- Header -->
     <header class="sticky top-0 z-40 bg-tg-bg/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center justify-between">
-        <div class="flex items-center space-x-3 min-w-0 pr-2">
+        <div onclick="switchTab('profile')" class="flex items-center space-x-3 min-w-0 pr-2 cursor-pointer">
             <div id="userAvatar" class="w-10 h-10 rounded-full bg-tg-button flex items-center justify-center font-bold text-lg text-tg-buttonText overflow-hidden flex-shrink-0">
                 <i class="fa-solid fa-user"></i>
             </div>
@@ -104,7 +104,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-tg-hint">Скидка для участников</div>
-                    <div class="text-emerald-400 font-bold">до −99%</div>
+                    <div class="text-emerald-400 font-bold">до −20%</div>
                 </div>
             </div>
 
@@ -117,16 +117,61 @@
             </div>
         </section>
 
-        <!-- Tab 2: My Services -->
-        <section id="tabMy" class="space-y-4 hidden">
-            <div class="flex items-center justify-between">
-                <h2 class="font-bold text-lg">Мои объявления</h2>
-                <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium flex items-center space-x-1">
-                    <i class="fa-solid fa-plus"></i><span>Добавить</span>
-                </button>
+        <!-- Tab 2: Profile (Combined Profile & My Services) -->
+        <section id="tabProfile" class="space-y-4 hidden">
+            <!-- User Header Card -->
+            <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
+                <div class="flex items-center space-x-3">
+                    <div id="profileBigAvatar" class="w-14 h-14 rounded-full bg-tg-button flex items-center justify-center font-bold text-xl text-tg-buttonText overflow-hidden flex-shrink-0">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h2 id="profileBigName" class="font-bold text-base text-tg-text truncate">Загрузка...</h2>
+                        <p id="profileBigUsername" class="text-xs text-tg-hint">@username</p>
+                    </div>
+                </div>
             </div>
-            <div id="myServicesList" class="space-y-3.5">
-                <!-- User's own services -->
+
+            <!-- Referral Card -->
+            <div class="bg-gradient-to-br from-tg-card to-tg-button/10 rounded-2xl p-4 border border-tg-accent/20 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-xl bg-tg-accent/20 text-tg-accent flex items-center justify-center">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-tg-text">Пригласить друзей</h3>
+                            <p class="text-[11px] text-tg-hint">Поделитесь вашей личной ссылкой</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2 bg-tg-bg/80 p-2.5 rounded-xl border border-white/5">
+                        <input type="text" id="referralLinkInput" readonly class="bg-transparent text-xs text-tg-hint w-full focus:outline-none select-all truncate">
+                        <button onclick="copyReferralLink()" class="bg-tg-card text-tg-text px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-tg-accent hover:text-white transition-colors flex-shrink-0 flex items-center space-x-1">
+                            <i class="fa-solid fa-copy"></i>
+                            <span id="copyBtnText">Копировать</span>
+                        </button>
+                    </div>
+                    <button onclick="shareReferralLink()" class="w-full bg-tg-button text-tg-buttonText font-medium py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-md shadow-tg-button/20 active:scale-95 transition-transform">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Отправить в чат Telegram</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- My Services List Section -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-base text-tg-text">Мои объявления</h3>
+                    <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i><span>Добавить</span>
+                    </button>
+                </div>
+                <div id="myServicesList" class="space-y-3.5">
+                    <!-- User's own services -->
+                </div>
             </div>
         </section>
 
@@ -139,7 +184,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-base text-red-400">Панель администратора</h2>
-                        <p class="text-xs text-tg-hint">Статистика, модерация и рассылки</p>
+                        <p class="text-xs text-tg-hint">Статистика, приглашения и управление</p>
                     </div>
                 </div>
             </div>
@@ -169,10 +214,23 @@
                 </div>
                 <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
                     <div class="text-tg-hint text-[11px] flex items-center justify-between">
-                        <span>Авторов объявлений</span>
-                        <i class="fa-solid fa-bullhorn text-amber-400/70"></i>
+                        <span>Приглашений (Ref)</span>
+                        <i class="fa-solid fa-user-plus text-amber-400/70"></i>
                     </div>
-                    <div id="adminStatAuthors" class="text-xl font-bold text-amber-400 mt-1">0</div>
+                    <div id="adminStatTotalRef" class="text-xl font-bold text-amber-400 mt-1">0</div>
+                </div>
+            </div>
+
+            <!-- Referral Leaderboard in Admin -->
+            <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
+                <h3 class="font-bold text-sm text-tg-text flex items-center justify-between">
+                    <span class="flex items-center space-x-2">
+                        <i class="fa-solid fa-award text-amber-400"></i>
+                        <span>Рейтинг по приглашениям</span>
+                    </span>
+                </h3>
+                <div id="adminRefLeadersList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
@@ -244,9 +302,9 @@
             <i class="fa-solid fa-store text-lg"></i>
             <span class="text-[10px] font-medium">Каталог</span>
         </button>
-        <button onclick="switchTab('my')" id="navMy" class="flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors">
-            <i class="fa-solid fa-user-tag text-lg"></i>
-            <span class="text-[10px] font-medium">Мои</span>
+        <button onclick="switchTab('profile')" id="navProfile" class="flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors">
+            <i class="fa-solid fa-user text-lg"></i>
+            <span class="text-[10px] font-medium">Профиль</span>
         </button>
         <button onclick="switchTab('admin')" id="navAdmin" class="flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors hidden">
             <i class="fa-solid fa-shield text-lg"></i>
@@ -356,6 +414,7 @@
         };
 
         const ADMIN_USERNAME = "klimk93";
+        const BOT_USERNAME = "MarketSublifeBot";
 
         let db = null;
         let isFirebaseConnected = false;
@@ -393,6 +452,37 @@
         if (currentUser.photo_url) {
             document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
+
+        // Profile Data Setup
+        document.getElementById('profileBigName').textContent = currentUser.first_name || 'Участник клуба';
+        document.getElementById('profileBigUsername').textContent = currentUser.username ? `@${currentUser.username}` : `ID: ${currentUser.id}`;
+        if (currentUser.photo_url) {
+            document.getElementById('profileBigAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
+        }
+
+        // Referral Link Construction
+        const userRefCode = currentUser.username || currentUser.id;
+        const myReferralLink = `https://t.me/${BOT_USERNAME}?start=ref_${userRefCode}`;
+        document.getElementById('referralLinkInput').value = myReferralLink;
+
+        window.copyReferralLink = function() {
+            const input = document.getElementById('referralLinkInput');
+            input.select();
+            navigator.clipboard.writeText(myReferralLink);
+            const btnText = document.getElementById('copyBtnText');
+            btnText.textContent = "Скопировано!";
+            setTimeout(() => { btnText.textContent = "Копировать"; }, 2000);
+        };
+
+        window.shareReferralLink = function() {
+            const text = encodeURIComponent(`Присоединяйся к нашему закрытому маркетплейсу услуг и товаров "Для своих"! 🚀`);
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(myReferralLink)}&text=${text}`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
+        };
 
         function getFavorites() {
             try {
@@ -678,12 +768,12 @@
 
             if (mine.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-16 space-y-2">
-                        <div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl">
-                            <i class="fa-solid fa-user-pen"></i>
+                    <div class="text-center py-12 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5">
+                        <div class="w-10 h-10 rounded-xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-lg">
+                            <i class="fa-solid fa-box-open"></i>
                         </div>
-                        <p class="text-sm font-medium text-tg-text">У вас нет активных объявлений</p>
-                        <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать объявление</button>
+                        <p class="text-xs font-medium text-tg-text">У вас пока нет объявлений</p>
+                        <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать первое объявление</button>
                     </div>`;
                 return;
             }
@@ -694,11 +784,16 @@
         function renderAdminPanel() {
             const authorsMap = {};
             let totalViews = 0;
+            let totalRefInvites = 0;
 
             allServices.forEach(s => {
                 const uname = (s.authorUsername || 'unknown').toLowerCase();
                 authorsMap[uname] = (authorsMap[uname] || 0) + 1;
                 totalViews += (s.views || 0);
+            });
+
+            allUsers.forEach(u => {
+                totalRefInvites += (u.invitedCount || 0);
             });
 
             const totalUsersCount = Math.max(allUsers.length, Object.keys(authorsMap).length);
@@ -707,10 +802,33 @@
             document.getElementById('adminStatAppLaunches').textContent = globalStats.totalLaunches || 0;
             document.getElementById('adminStatTotalViews').textContent = totalViews;
             document.getElementById('adminStatTotalUsers').textContent = totalUsersCount;
-            document.getElementById('adminStatAuthors').textContent = authorsCount;
+            document.getElementById('adminStatTotalRef').textContent = totalRefInvites;
             document.getElementById('allUsersBadge').textContent = totalUsersCount;
 
             renderActivityChart();
+
+            // Render Referral Leaders
+            const refLeadersContainer = document.getElementById('adminRefLeadersList');
+            const sortedUsersByRef = [...allUsers].sort((a, b) => (b.invitedCount || 0) - (a.invitedCount || 0));
+            
+            if (sortedUsersByRef.length === 0) {
+                refLeadersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет приглашенных участников.</p>`;
+            } else {
+                refLeadersContainer.innerHTML = sortedUsersByRef.map((u, index) => {
+                    const invites = u.invitedCount || 0;
+                    return `
+                        <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
+                            <div class="flex items-center space-x-2.5 min-w-0 pr-2">
+                                <span class="font-bold text-xs ${index === 0 ? 'text-amber-400' : 'text-tg-hint'}">#${index + 1}</span>
+                                <span class="font-medium text-tg-text truncate">@${u.username || 'user'}</span>
+                            </div>
+                            <span class="text-xs font-bold bg-amber-400/10 text-amber-400 px-2 py-0.5 rounded-full flex-shrink-0">
+                                ${invites} пригл.
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+            }
 
             const usersContainer = document.getElementById('adminUsersList');
             const combinedUsers = [...allUsers];
@@ -792,7 +910,6 @@
             const isFav = favorites.includes(s.id);
             const isArchived = (s.status || 'active') === 'archived';
 
-            // Calculate rating
             const reviews = s.reviews || [];
             const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
             
@@ -981,19 +1098,19 @@
 
         window.switchTab = function(tab) {
             document.getElementById('tabCatalog').classList.add('hidden');
-            document.getElementById('tabMy').classList.add('hidden');
+            document.getElementById('tabProfile').classList.add('hidden');
             document.getElementById('tabAdmin').classList.add('hidden');
 
             document.getElementById('navCatalog').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
-            document.getElementById('navMy').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
+            document.getElementById('navProfile').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
             if (isAdmin) document.getElementById('navAdmin').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
 
             if (tab === 'catalog') {
                 document.getElementById('tabCatalog').classList.remove('hidden');
                 document.getElementById('navCatalog').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
-            } else if (tab === 'my') {
-                document.getElementById('tabMy').classList.remove('hidden');
-                document.getElementById('navMy').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
+            } else if (tab === 'profile') {
+                document.getElementById('tabProfile').classList.remove('hidden');
+                document.getElementById('navProfile').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
             } else if (tab === 'admin' && isAdmin) {
                 document.getElementById('tabAdmin').classList.remove('hidden');
                 document.getElementById('navAdmin').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
