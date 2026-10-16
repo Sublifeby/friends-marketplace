@@ -203,10 +203,10 @@
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Фотография товара/услуги</label>
                     <div class="space-y-2">
-                        <input type="file" id="fileInput" accept="image/*" onchange="uploadImageSecure(event)" class="hidden">
+                        <input type="file" id="fileInput" accept="image/*" onchange="compressAndSelectImage(event)" class="hidden">
                         <button type="button" onclick="document.getElementById('fileInput').click()" class="w-full bg-tg-card text-tg-hint border border-dashed border-white/20 py-2.5 rounded-xl text-xs font-medium hover:text-tg-text transition-colors flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
-                            <span id="uploadStatus">Загрузить фото с устройства</span>
+                            <span id="uploadStatus">Выбрать фото с устройства</span>
                         </button>
                         <input type="url" id="serviceImage" placeholder="Или вставьте ссылку на изображение (URL)" 
                             class="w-full bg-tg-card text-tg-text px-3.5 py-2 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
@@ -455,7 +455,7 @@
         window.openAddModal = function() {
             document.getElementById('modalTitle').textContent = "Новое объявление";
             document.getElementById('editServiceId').value = "";
-            document.getElementById('uploadStatus').textContent = "Загрузить фото с устройства";
+            document.getElementById('uploadStatus').textContent = "Выбрать фото с устройства";
             document.getElementById('serviceForm').reset();
             document.getElementById('serviceModal').classList.remove('hidden');
         };
@@ -471,7 +471,7 @@
             document.getElementById('serviceFriendPrice').value = s.friendPrice || "";
             document.getElementById('serviceDesc').value = s.desc;
             document.getElementById('serviceImage').value = s.imageUrl || "";
-            document.getElementById('uploadStatus').textContent = s.imageUrl ? "Фото загружено" : "Загрузить фото с устройства";
+            document.getElementById('uploadStatus').textContent = s.imageUrl ? "Фото загружено" : "Выбрать фото с устройства";
             document.getElementById('serviceModal').classList.remove('hidden');
         };
 
@@ -479,33 +479,49 @@
             document.getElementById('serviceModal').classList.add('hidden');
         };
 
-        // Secure Direct Image Uploader
-        window.uploadImageSecure = async function(e) {
+        // Local Client-Side Image Compression & Processing (100% reliable)
+        window.compressAndSelectImage = function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const statusEl = document.getElementById('uploadStatus');
-            statusEl.textContent = "Загрузка изображения...";
+            statusEl.textContent = "Обработка фото...";
 
-            const formData = new FormData();
-            formData.append("image", file);
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
+                    let width = img.width;
+                    let height = img.height;
 
-            try {
-                const response = await fetch("https://api.imgbb.com/1/upload?key=6d257f2c1d01470e30a218f270275817", {
-                    method: "POST",
-                    body: formData
-                });
-                const resData = await response.json();
-                if (resData.success) {
-                    document.getElementById('serviceImage').value = resData.data.url;
-                    statusEl.textContent = "✓ Фото успешно загружено!";
-                } else {
-                    statusEl.textContent = "Ошибка загрузки. Попробуйте снова.";
-                }
-            } catch (err) {
-                console.error("Upload error:", err);
-                statusEl.textContent = "Ошибка загрузки. Вставьте ссылку вручную.";
-            }
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to compressed JPEG data URL
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                    document.getElementById('serviceImage').value = dataUrl;
+                    statusEl.textContent = "✓ Фото успешно готово!";
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
         };
 
         window.saveService = async function(e) {
