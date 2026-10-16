@@ -135,19 +135,35 @@
                 </div>
             </div>
 
-            <!-- Stats Block -->
-            <div class="grid grid-cols-3 gap-2">
-                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
-                    <div class="text-tg-hint text-[10px]">Всего зашли</div>
-                    <div id="adminStatTotalUsers" class="text-lg font-bold text-tg-accent mt-0.5">0</div>
+            <!-- Enhanced Analytics Grid -->
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-[11px] flex items-center justify-between">
+                        <span>Запусков бота</span>
+                        <i class="fa-solid fa-rocket text-tg-accent/70"></i>
+                    </div>
+                    <div id="adminStatAppLaunches" class="text-xl font-bold text-tg-accent mt-1">0</div>
                 </div>
-                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
-                    <div class="text-tg-hint text-[10px]">С публикацией</div>
-                    <div id="adminStatAuthors" class="text-lg font-bold text-emerald-400 mt-0.5">0</div>
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-[11px] flex items-center justify-between">
+                        <span>Просмотров услуг</span>
+                        <i class="fa-solid fa-eye text-emerald-400/70"></i>
+                    </div>
+                    <div id="adminStatTotalViews" class="text-xl font-bold text-emerald-400 mt-1">0</div>
                 </div>
-                <div class="bg-tg-card p-3 rounded-2xl border border-white/5 text-center">
-                    <div class="text-tg-hint text-[10px]">Объявлений</div>
-                    <div id="adminStatOffers" class="text-lg font-bold text-tg-text mt-0.5">0</div>
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-[11px] flex items-center justify-between">
+                        <span>Всего участников</span>
+                        <i class="fa-solid fa-users text-purple-400/70"></i>
+                    </div>
+                    <div id="adminStatTotalUsers" class="text-xl font-bold text-purple-400 mt-1">0</div>
+                </div>
+                <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
+                    <div class="text-tg-hint text-[11px] flex items-center justify-between">
+                        <span>Авторов объявлений</span>
+                        <i class="fa-solid fa-bullhorn text-amber-400/70"></i>
+                    </div>
+                    <div id="adminStatAuthors" class="text-xl font-bold text-amber-400 mt-1">0</div>
                 </div>
             </div>
 
@@ -156,7 +172,7 @@
                 <h3 class="font-bold text-sm text-tg-text flex items-center justify-between">
                     <span class="flex items-center space-x-2">
                         <i class="fa-solid fa-users text-tg-accent"></i>
-                        <span>Все участники приложения</span>
+                        <span>Все участники</span>
                     </span>
                     <span id="allUsersBadge" class="text-xs bg-tg-accent/10 text-tg-accent px-2 py-0.5 rounded-full">0</span>
                 </h3>
@@ -169,7 +185,7 @@
             <div class="space-y-3">
                 <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2 px-1">
                     <i class="fa-solid fa-list-check text-tg-accent"></i>
-                    <span>Управление всеми объявлениями</span>
+                    <span>Управление объявлениями</span>
                 </h3>
                 <div id="adminServicesList" class="space-y-3">
                     <!-- Admin moderation list -->
@@ -260,7 +276,7 @@
     <!-- Firebase SDK Setup & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, increment, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -314,16 +330,22 @@
             document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
 
-        // Register / Update connected user in Firebase
-        async function registerUserPresence() {
+        // Register session launch and track user activity
+        async function registerUserPresenceAndLaunch() {
             if (!isFirebaseConnected || !db || !currentUser) return;
             try {
+                // Increment global launch counter
+                const globalStatsRef = doc(db, "app_stats", "general");
+                await setDoc(globalStatsRef, { totalLaunches: increment(1) }, { merge: true });
+
+                // Register/update user profile + user sessions count
                 const userRef = doc(db, "app_users", String(currentUser.id));
                 await setDoc(userRef, {
                     id: currentUser.id,
                     name: currentUser.first_name || 'Без имени',
                     username: currentUser.username || 'unknown',
                     photo_url: currentUser.photo_url || '',
+                    launchesCount: increment(1),
                     lastSeen: Date.now()
                 }, { merge: true });
             } catch (err) {
@@ -333,6 +355,7 @@
 
         let allServices = [];
         let allUsers = [];
+        let globalStats = { totalLaunches: 0 };
         let currentCategory = 'all';
 
         function initRealtimeSync() {
@@ -345,8 +368,16 @@
                 return;
             }
 
-            // Sync users presence
-            registerUserPresence();
+            // Record this app launch session
+            registerUserPresenceAndLaunch();
+
+            // Realtime listener for global stats
+            onSnapshot(doc(db, "app_stats", "general"), (docSnap) => {
+                if (docSnap.exists()) {
+                    globalStats = docSnap.data();
+                    if (isAdmin) renderAdminPanel();
+                }
+            });
 
             // Realtime query for services
             const qServices = query(collection(db, "services"), orderBy("createdAt", "desc"));
@@ -432,14 +463,19 @@
         function renderAdminPanel() {
             // Authors map
             const authorsMap = {};
+            let totalViews = 0;
+
             allServices.forEach(s => {
                 const uname = (s.authorUsername || 'unknown').toLowerCase();
                 authorsMap[uname] = (authorsMap[uname] || 0) + 1;
+                totalViews += (s.views || 0);
             });
 
             const totalUsersCount = Math.max(allUsers.length, Object.keys(authorsMap).length);
             const authorsCount = Object.keys(authorsMap).length;
 
+            document.getElementById('adminStatAppLaunches').textContent = globalStats.totalLaunches || 0;
+            document.getElementById('adminStatTotalViews').textContent = totalViews;
             document.getElementById('adminStatTotalUsers').textContent = totalUsersCount;
             document.getElementById('adminStatAuthors').textContent = authorsCount;
             document.getElementById('adminStatOffers').textContent = allServices.length;
@@ -448,11 +484,10 @@
             // Render combined users list
             const usersContainer = document.getElementById('adminUsersList');
             
-            // Merge Firestore users with service authors for complete coverage
             const combinedUsers = [...allUsers];
             Object.keys(authorsMap).forEach(uname => {
                 if (!combinedUsers.some(u => (u.username || '').toLowerCase() === uname)) {
-                    combinedUsers.push({ username: uname, name: uname, lastSeen: Date.now() });
+                    combinedUsers.push({ username: uname, name: uname, lastSeen: Date.now(), launchesCount: 1 });
                 }
             });
 
@@ -462,13 +497,17 @@
                 usersContainer.innerHTML = combinedUsers.map(u => {
                     const uname = u.username || 'unknown';
                     const offersNum = authorsMap[uname.toLowerCase()] || 0;
+                    const launches = u.launchesCount || 1;
                     return `
                         <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
                             <div class="flex items-center space-x-2 min-w-0 pr-2">
                                 <div class="w-6 h-6 rounded-full bg-tg-accent/10 text-tg-accent flex items-center justify-center font-bold flex-shrink-0 overflow-hidden">
                                     ${u.photo_url ? `<img src="${u.photo_url}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
                                 </div>
-                                <span class="font-medium text-tg-text truncate">@${uname}</span>
+                                <div class="truncate">
+                                    <span class="font-medium text-tg-text">@${uname}</span>
+                                    <span class="text-[10px] text-tg-hint block">Запусков: ${launches}</span>
+                                </div>
                             </div>
                             <div class="flex items-center space-x-2 flex-shrink-0">
                                 ${offersNum > 0 ? 
@@ -492,7 +531,7 @@
                 <div class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5">
                     <div class="min-w-0 pr-2">
                         <div class="font-semibold text-sm truncate">${s.name}</div>
-                        <div class="text-xs text-tg-hint">Автор: @${s.authorUsername || 'unknown'} • ${s.price}</div>
+                        <div class="text-xs text-tg-hint">Автор: @${s.authorUsername || 'unknown'} • ${s.price} • Просмотров: ${s.views || 0}</div>
                     </div>
                     <div class="flex items-center space-x-2 flex-shrink-0">
                         <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
@@ -526,6 +565,7 @@
                                     ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
                                 </div>
                                 <span class="text-xs text-tg-hint truncate">@${s.authorUsername || 'friend'}</span>
+                                <span class="text-[10px] text-tg-hint/70 flex items-center space-x-1 ml-1"><i class="fa-solid fa-eye text-[9px]"></i><span>${s.views || 0}</span></span>
                             </div>
                             <div class="flex items-center space-x-2 flex-shrink-0">
                                 ${canManage ? `
@@ -536,7 +576,7 @@
                                         <i class="fa-solid fa-trash mr-1"></i> Удалить
                                     </button>
                                 ` : ''}
-                                <a href="https://t.me/${s.authorUsername || ''}" target="_blank" class="bg-tg-button text-tg-buttonText px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 shadow-md shadow-tg-button/20">
+                                <a href="https://t.me/${s.authorUsername || ''}" onclick="trackServiceClick('${s.id}')" target="_blank" class="bg-tg-button text-tg-buttonText px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 shadow-md shadow-tg-button/20">
                                     <i class="fa-solid fa-paper-plane"></i>
                                     <span>Связаться</span>
                                 </a>
@@ -546,6 +586,16 @@
                 </div>
             `;
         }
+
+        window.trackServiceClick = async function(id) {
+            if (!isFirebaseConnected || !db || !id) return;
+            try {
+                const serviceRef = doc(db, "services", id);
+                await updateDoc(serviceRef, { views: increment(1) });
+            } catch (err) {
+                console.error("Error tracking view:", err);
+            }
+        };
 
         function getCategoryName(cat) {
             const map = { services: 'Услуги', goods: 'Товары', realestate: 'Недвижимость', auto: 'Авто', other: 'Разное' };
@@ -669,6 +719,7 @@
                 if (id) {
                     await updateDoc(doc(db, "services", id), data);
                 } else {
+                    data.views = 0;
                     await addDoc(collection(db, "services"), data);
                 }
                 closeModal();
