@@ -63,17 +63,25 @@
         
         <!-- Tab 1: Catalog -->
         <section id="tabCatalog" class="space-y-4">
-            <!-- Search & Filter -->
+            <!-- Search, Sort & Filter -->
             <div class="space-y-2.5">
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
-                    <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, специалистов..." 
-                        class="w-full bg-tg-card text-tg-text pl-10 pr-4 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent/50 transition-colors">
+                <div class="flex space-x-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
+                        <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, специалистов..." 
+                            class="w-full bg-tg-card text-tg-text pl-10 pr-4 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent/50 transition-colors">
+                    </div>
+                    <select id="sortSelect" onchange="filterServices()" class="bg-tg-card text-tg-text px-3 py-2.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
+                        <option value="newest">Сначала новые</option>
+                        <option value="price_asc">Сначала дешевле</option>
+                        <option value="price_desc">Сначала дороже</option>
+                    </select>
                 </div>
                 
                 <!-- Categories -->
                 <div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1" id="categoryChips">
                     <button onclick="selectCategory('all')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-button text-tg-buttonText transition-colors">Все</button>
+                    <button onclick="selectCategory('favorites')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-amber-400 hover:bg-tg-card/80 transition-colors"><i class="fa-solid fa-star mr-1"></i>Избранное</button>
                     <button onclick="selectCategory('services')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Услуги</button>
                     <button onclick="selectCategory('goods')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Товары</button>
                     <button onclick="selectCategory('realestate')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Недвижимость</button>
@@ -172,7 +180,7 @@
                 <h3 class="font-bold text-sm text-tg-text flex items-center justify-between">
                     <span class="flex items-center space-x-2">
                         <i class="fa-solid fa-users text-tg-accent"></i>
-                        <span>Все участники</span>
+                        <span>Все участники (клик для связи)</span>
                     </span>
                     <span id="allUsersBadge" class="text-xs bg-tg-accent/10 text-tg-accent px-2 py-0.5 rounded-full">0</span>
                 </h3>
@@ -181,12 +189,19 @@
                 </div>
             </div>
 
-            <!-- Moderation List -->
+            <!-- Moderation List with Status Filter -->
             <div class="space-y-3">
-                <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2 px-1">
-                    <i class="fa-solid fa-list-check text-tg-accent"></i>
-                    <span>Управление объявлениями</span>
-                </h3>
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check text-tg-accent"></i>
+                        <span>Управление объявлениями</span>
+                    </h3>
+                    <div class="flex space-x-1 bg-tg-card p-1 rounded-xl border border-white/5 text-[11px]">
+                        <button onclick="setAdminFilter('all')" id="admFilterAll" class="px-2.5 py-1 rounded-lg bg-tg-button text-tg-buttonText font-medium transition-colors">Все</button>
+                        <button onclick="setAdminFilter('active')" id="admFilterActive" class="px-2.5 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors">Активные</button>
+                        <button onclick="setAdminFilter('archived')" id="admFilterArchived" class="px-2.5 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors">Архив</button>
+                    </div>
+                </div>
                 <div id="adminServicesList" class="space-y-3">
                     <!-- Admin moderation list -->
                 </div>
@@ -248,15 +263,24 @@
                         </select>
                     </div>
                     <div>
+                        <label class="block text-xs text-tg-hint mb-1">Статус</label>
+                        <select id="serviceStatus" class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                            <option value="active">Активно</option>
+                            <option value="archived">Продано / В архиве</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
                         <label class="block text-xs text-tg-hint mb-1">Обычная цена</label>
                         <input type="text" id="servicePrice" required placeholder="1500 руб." 
                             class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs text-tg-hint mb-1">Цена для своих / Скидка (необязательно)</label>
-                    <input type="text" id="serviceFriendPrice" placeholder="1000 руб. / Скидка 20%" 
-                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                    <div>
+                        <label class="block text-xs text-tg-hint mb-1">Цена для своих (необязательно)</label>
+                        <input type="text" id="serviceFriendPrice" placeholder="1000 руб." 
+                            class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Краткое описание (отображается в каталоге)</label>
@@ -303,7 +327,6 @@
             measurementId: "G-5D330LC5LX"
         };
 
-        // Strict Admin Username
         const ADMIN_USERNAME = "klimk93";
 
         let db = null;
@@ -317,7 +340,6 @@
             console.error("Firebase init error:", e);
         }
 
-        // Telegram WebApp initialization
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
@@ -344,7 +366,33 @@
             document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
 
-        // Register session launch and track user activity
+        // Favorites management via localStorage
+        function getFavorites() {
+            try {
+                return JSON.parse(localStorage.getItem('sublife_favorites') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        window.toggleFavorite = function(id, event) {
+            if (event) event.stopPropagation();
+            let favs = getFavorites();
+            if (favs.includes(id)) {
+                favs = favs.filter(item => item !== id);
+            } else {
+                favs.push(id);
+            }
+            localStorage.setItem('sublife_favorites', JSON.stringify(favs));
+            renderCatalog();
+            renderMyServices();
+            // Update detail modal if open
+            const detailModal = document.getElementById('detailModal');
+            if (detailModal && !detailModal.classList.contains('hidden')) {
+                // Refresh heart state if needed
+            }
+        };
+
         async function registerUserPresenceAndLaunch() {
             if (!isFirebaseConnected || !db || !currentUser) return;
             try {
@@ -369,6 +417,7 @@
         let allUsers = [];
         let globalStats = { totalLaunches: 0 };
         let currentCategory = 'all';
+        let adminFilterStatus = 'all';
 
         function initRealtimeSync() {
             if (!isFirebaseConnected || !db) {
@@ -396,9 +445,9 @@
                     allServices.push({ id: docSnap.id, ...docSnap.data() });
                 });
                 
-                // Гарантированное обновление счетчика на главной
+                const activeCount = allServices.filter(s => (s.status || 'active') === 'active').length;
                 const counterEl = document.getElementById('totalOffersCount');
-                if (counterEl) counterEl.textContent = allServices.length;
+                if (counterEl) counterEl.textContent = activeCount;
 
                 renderCatalog();
                 renderMyServices();
@@ -428,16 +477,55 @@
             renderCatalog();
         };
 
+        window.setAdminFilter = function(status) {
+            adminFilterStatus = status;
+            ['All', 'Active', 'Archived'].forEach(s => {
+                const btn = document.getElementById(`admFilter${s}`);
+                if (btn) {
+                    btn.className = s.toLowerCase() === status ? "px-2.5 py-1 rounded-lg bg-tg-button text-tg-buttonText font-medium transition-colors" : "px-2.5 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors";
+                }
+            });
+            renderAdminPanel();
+        };
+
+        function parsePrice(str) {
+            if (!str) return 0;
+            const num = parseInt(String(str).replace(/[^\d]/g, ''), 10);
+            return isNaN(num) ? 0 : num;
+        }
+
         function renderCatalog() {
             const queryText = document.getElementById('searchInput').value.toLowerCase();
+            const sortMode = document.getElementById('sortSelect').value;
             const container = document.getElementById('servicesList');
+            const favorites = getFavorites();
 
             let filtered = allServices.filter(s => {
-                const matchesCat = currentCategory === 'all' || s.category === currentCategory;
+                const status = s.status || 'active';
+                // Regular catalog only shows active items (unless viewing favorites)
+                if (status === 'archived' && currentCategory !== 'favorites') return false;
+
+                if (currentCategory === 'favorites') {
+                    if (!favorites.includes(s.id)) return false;
+                } else if (currentCategory !== 'all') {
+                    if (s.category !== currentCategory) return false;
+                }
+
                 const shortText = (s.shortDesc || s.desc || '').toLowerCase();
                 const fullText = (s.desc || '').toLowerCase();
-                const matchesQuery = s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
-                return matchesCat && matchesQuery;
+                return s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                if (sortMode === 'price_asc') {
+                    return parsePrice(a.price) - parsePrice(b.price);
+                } else if (sortMode === 'price_desc') {
+                    return parsePrice(b.price) - parsePrice(a.price);
+                } else {
+                    // newest
+                    return (b.createdAt || 0) - (a.createdAt || 0);
+                }
             });
 
             if (filtered.length === 0) {
@@ -446,8 +534,8 @@
                         <div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl">
                             <i class="fa-solid fa-box-open"></i>
                         </div>
-                        <p class="text-sm font-medium text-tg-text">Пока нет объявлений</p>
-                        <p class="text-xs text-tg-hint">Нажмите «Создать», чтобы добавить первое предложение!</p>
+                        <p class="text-sm font-medium text-tg-text">${currentCategory === 'favorites' ? 'В избранном пока ничего нет' : 'Пока нет объявлений'}</p>
+                        <p class="text-xs text-tg-hint">Добавляйте карточки в избранное или создайте свое!</p>
                     </div>`;
                 return;
             }
@@ -494,7 +582,6 @@
             document.getElementById('allUsersBadge').textContent = totalUsersCount;
 
             const usersContainer = document.getElementById('adminUsersList');
-            
             const combinedUsers = [...allUsers];
             Object.keys(authorsMap).forEach(uname => {
                 if (!combinedUsers.some(u => (u.username || '').toLowerCase() === uname)) {
@@ -510,7 +597,7 @@
                     const offersNum = authorsMap[uname.toLowerCase()] || 0;
                     const launches = u.launchesCount || 1;
                     return `
-                        <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
+                        <a href="https://t.me/${uname}" target="_blank" class="flex items-center justify-between bg-tg-bg/50 hover:bg-tg-bg px-3 py-2 rounded-xl text-xs transition-colors block">
                             <div class="flex items-center space-x-2 min-w-0 pr-2">
                                 <div class="w-6 h-6 rounded-full bg-tg-accent/10 text-tg-accent flex items-center justify-center font-bold flex-shrink-0 overflow-hidden">
                                     ${u.photo_url ? `<img src="${u.photo_url}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
@@ -525,30 +612,45 @@
                                     `<span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full font-bold">Автор (${offersNum})</span>` : 
                                     `<span class="text-[10px] bg-tg-card text-tg-hint px-2 py-0.5 rounded-full">Зритель</span>`
                                 }
-                                <a href="https://t.me/${uname}" target="_blank" class="text-tg-accent hover:underline text-[11px]"><i class="fa-solid fa-paper-plane"></i></a>
+                                <span class="text-tg-accent text-[11px]"><i class="fa-solid fa-paper-plane"></i></span>
                             </div>
-                        </div>
+                        </a>
                     `;
                 }).join('');
             }
 
+            // Admin moderation list filtered by status
             const container = document.getElementById('adminServicesList');
-            if (allServices.length === 0) {
-                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Нет объявлений для модерации.</p>`;
+            let filteredAdminServices = allServices.filter(s => {
+                const st = s.status || 'active';
+                if (adminFilterStatus === 'active') return st === 'active';
+                if (adminFilterStatus === 'archived') return st === 'archived';
+                return true;
+            });
+
+            if (filteredAdminServices.length === 0) {
+                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Нет объявлений по данному фильтру.</p>`;
                 return;
             }
-            container.innerHTML = allServices.map(s => `
-                <div class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5">
-                    <div class="min-w-0 pr-2">
-                        <div class="font-semibold text-sm truncate">${s.name}</div>
-                        <div class="text-xs text-tg-hint">Автор: @${s.authorUsername || 'unknown'} • ${s.price} • Просмотров: ${s.views || 0}</div>
+
+            container.innerHTML = filteredAdminServices.map(s => {
+                const isArchived = (s.status || 'active') === 'archived';
+                return `
+                    <div class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5">
+                        <div class="min-w-0 pr-2">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-semibold text-sm truncate">${s.name}</span>
+                                ${isArchived ? '<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full">Архив</span>' : '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full">Активно</span>'}
+                            </div>
+                            <div class="text-xs text-tg-hint mt-0.5">Автор: @${s.authorUsername || 'unknown'} • ${s.price} • Просмотров: ${s.views || 0}</div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2 flex-shrink-0">
-                        <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function renderCardHtml(s, showControls = false) {
@@ -556,10 +658,14 @@
             const canManage = showControls || isOwner || isAdmin;
             const displayShortDesc = s.shortDesc || s.desc || '';
             const contactUrl = `https://t.me/${s.authorUsername || ''}?text=${encodeURIComponent('Здравствуйте! Меня заинтересовало ваше объявление: ' + s.name)}`;
+            const favorites = getFavorites();
+            const isFav = favorites.includes(s.id);
+            const isArchived = (s.status || 'active') === 'archived';
             
             return `
-                <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99]">
-                    ${s.imageUrl ? `<div class="h-44 w-full bg-cover bg-center" style="background-image: url('${s.imageUrl}')"></div>` : ''}
+                <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99] relative">
+                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                    ${s.imageUrl ? `<div class="h-44 w-full bg-cover bg-center ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : ''}
                     <div class="p-4 space-y-3">
                         <div class="flex items-start justify-between">
                             <div>
@@ -581,6 +687,9 @@
                                 <span class="text-[10px] text-tg-hint/70 flex items-center space-x-1 ml-1"><i class="fa-solid fa-eye text-[9px]"></i><span>${s.views || 0}</span></span>
                             </div>
                             <div class="flex items-center space-x-2 flex-shrink-0">
+                                <button onclick="toggleFavorite('${s.id}', event)" class="w-8 h-8 rounded-xl bg-tg-bg text-tg-hint hover:text-amber-400 flex items-center justify-center text-xs transition-colors">
+                                    <i class="${isFav ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star'}"></i>
+                                </button>
                                 ${canManage ? `
                                     <button onclick="openEditModal('${s.id}')" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2.5 py-1 rounded-lg text-xs font-medium transition-colors">
                                         <i class="fa-solid fa-pen"></i>
@@ -609,10 +718,14 @@
             const container = document.getElementById('detailContent');
             const fullDesc = s.desc || s.shortDesc || '';
             const contactUrl = `https://t.me/${s.authorUsername || ''}?text=${encodeURIComponent('Здравствуйте! Меня заинтересовало ваше объявление: ' + s.name)}`;
+            const favorites = getFavorites();
+            const isFav = favorites.includes(s.id);
+            const isArchived = (s.status || 'active') === 'archived';
 
             container.innerHTML = `
                 <div class="relative">
-                    ${s.imageUrl ? `<div class="h-60 w-full bg-cover bg-center rounded-t-3xl sm:rounded-t-2xl" style="background-image: url('${s.imageUrl}')"></div>` : '<div class="h-12"></div>'}
+                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                    ${s.imageUrl ? `<div class="h-60 w-full bg-cover bg-center rounded-t-3xl sm:rounded-t-2xl ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : '<div class="h-12"></div>'}
                     <button onclick="closeDetailModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
@@ -639,9 +752,15 @@
                                 <div class="text-[10px] text-tg-hint">${s.authorName || 'Участник клуба'}</div>
                             </div>
                         </div>
-                        <div class="text-xs text-tg-hint flex items-center space-x-1">
-                            <i class="fa-solid fa-eye text-[11px]"></i>
-                            <span>${(s.views || 0) + 1} просмотров</span>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleFavorite('${s.id}', event); openDetailModal('${s.id}');" class="px-3 py-1.5 rounded-xl bg-tg-bg text-xs font-medium text-tg-text flex items-center space-x-1.5 border border-white/5">
+                                <i class="${isFav ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star'}"></i>
+                                <span>${isFav ? 'В избранном' : 'В избранное'}</span>
+                            </button>
+                            <div class="text-xs text-tg-hint flex items-center space-x-1">
+                                <i class="fa-solid fa-eye text-[11px]"></i>
+                                <span>${(s.views || 0) + 1}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -705,6 +824,7 @@
         window.openAddModal = function() {
             document.getElementById('modalTitle').textContent = "Новое объявление";
             document.getElementById('editServiceId').value = "";
+            document.getElementById('serviceStatus').value = "active";
             document.getElementById('uploadStatus').textContent = "Выбрать фото с устройства";
             document.getElementById('serviceForm').reset();
             document.getElementById('serviceModal').classList.remove('hidden');
@@ -717,6 +837,7 @@
             document.getElementById('editServiceId').value = s.id;
             document.getElementById('serviceName').value = s.name;
             document.getElementById('serviceCategory').value = s.category;
+            document.getElementById('serviceStatus').value = s.status || "active";
             document.getElementById('servicePrice').value = s.price;
             document.getElementById('serviceFriendPrice').value = s.friendPrice || "";
             document.getElementById('serviceShortDesc').value = s.shortDesc || s.desc || "";
@@ -770,7 +891,7 @@
                 };
                 img.src = event.target.result;
             };
-            reader.readAsDataURL(dataUrlOrFile => reader.readAsDataURL(file)); // syntax safety
+            reader.readAsDataURL(file);
         };
 
         window.saveService = async function(e) {
@@ -784,6 +905,7 @@
             const data = {
                 name: document.getElementById('serviceName').value,
                 category: document.getElementById('serviceCategory').value,
+                status: document.getElementById('serviceStatus').value,
                 price: document.getElementById('servicePrice').value,
                 friendPrice: document.getElementById('serviceFriendPrice').value,
                 shortDesc: document.getElementById('serviceShortDesc').value,
@@ -823,7 +945,6 @@
             }
         };
 
-        initRealtestSync = initRealtimeSync;
         initRealtimeSync();
     </script>
 </body>
