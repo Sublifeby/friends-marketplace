@@ -1,618 +1,519 @@
-<!-- Top Header -->
-<header class="sticky top-0 z-40 bg-tg-card/90 backdrop-blur-md border-b border-tg-border px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 rounded-full bg-tg-primary/20 flex items-center justify-center text-tg-primary font-bold">
-            <i class="fa-solid fa-handshake"></i>
-        </div>
-        <div>
-            <h1 class="font-bold text-sm leading-tight">Маркетплейс для своих</h1>
-            <p class="text-xs text-tg-hint" id="user-greeting">Загрузка...</p>
-        </div>
-    </div>
-    <div class="flex items-center space-x-2">
-        <button onclick="switchTab('catalog')" id="nav-badge-catalog" class="relative p-2 text-tg-hint hover:text-white transition">
-            <i class="fa-solid fa-store text-lg"></i>
-        </button>
-    </div>
-</header>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Маркетплейс для своих</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tg: {
+                            bg: 'var(--tg-theme-bg-color, #18222d)',
+                            card: 'var(--tg-theme-secondary-bg-color, #232e3c)',
+                            text: 'var(--tg-theme-text-color, #ffffff)',
+                            hint: 'var(--tg-theme-hint-color, #708499)',
+                            button: 'var(--tg-theme-button-color, #2481cc)',
+                            buttonText: 'var(--tg-theme-button-text-color, #ffffff)',
+                            accent: '#2ea6ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: var(--tg-theme-bg-color, #18222d);
+            color: var(--tg-theme-text-color, #ffffff);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="pb-24">
 
-<!-- Main Container -->
-<main class="flex-1 max-w-md w-full mx-auto p-4 flex flex-col">
-
-    <!-- TAB 1: CATALOG -->
-    <section id="tab-catalog" class="space-y-4">
-        <!-- Search & Filter bar -->
-        <div class="space-y-2">
-            <div class="relative">
-                <i class="fa-solid fa-search absolute left-3.5 top-3.5 text-tg-hint text-sm"></i>
-                <input type="text" id="search-input" oninput="filterListings()" placeholder="Поиск услуг и товаров..." 
-                       class="w-full bg-tg-card border border-tg-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary transition">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-tg-bg/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div class="flex items-center space-x-3 min-w-0 pr-2">
+            <div id="userAvatar" class="w-10 h-10 rounded-full bg-tg-button flex items-center justify-center font-bold text-lg text-tg-buttonText overflow-hidden flex-shrink-0">
+                <i class="fa-solid fa-user"></i>
             </div>
-            <!-- Categories Chips -->
-            <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar" id="category-chips">
-                <button onclick="selectCategory('all')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-primary text-white whitespace-nowrap transition">Все</button>
-                <button onclick="selectCategory('Услуги')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Услуги</button>
-                <button onclick="selectCategory('Товары')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Товары</button>
-                <button onclick="selectCategory('Недвижимость')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Недвижимость</button>
-                <button onclick="selectCategory('Авто')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Авто</button>
-                <button onclick="selectCategory('Разное')" class="cat-chip px-3 py-1.5 rounded-full text-xs font-medium bg-tg-card border border-tg-border text-tg-hint hover:text-white whitespace-nowrap transition">Разное</button>
+            <div class="min-w-0">
+                <h1 id="userName" class="font-semibold text-sm leading-tight truncate">Загрузка...</h1>
+                <p class="text-xs text-tg-hint">Закрытый клуб услуг</p>
             </div>
         </div>
-
-        <!-- Listings Feed -->
-        <div id="listings-container" class="space-y-3">
-            <!-- Dynamically populated -->
-            <div class="text-center py-12 text-tg-hint">
-                <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
-                <p class="text-sm">Загрузка объявлений из облака...</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- TAB 2: MY SERVICES -->
-    <section id="tab-my-services" class="space-y-4 hidden">
-        <div class="flex justify-between items-center">
-            <h2 class="text-lg font-bold">Мои объявления</h2>
-            <button onclick="switchTab('add')" class="text-xs bg-tg-primary text-white px-3 py-1.5 rounded-lg font-medium hover:bg-tg-primaryHover transition">
-                <i class="fa-solid fa-plus mr-1"></i> Добавить
+        <div class="flex items-center space-x-2 flex-shrink-0">
+            <button onclick="openAddModal()" class="bg-tg-button text-tg-buttonText px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 active:scale-95 transition-transform shadow-lg shadow-tg-button/20 whitespace-nowrap">
+                <i class="fa-solid fa-plus"></i>
+                <span>Создать</span>
             </button>
         </div>
-        <div id="my-listings-container" class="space-y-3">
-            <!-- Dynamically populated -->
-        </div>
-    </section>
+    </header>
 
-    <!-- TAB 3: ADD SERVICE -->
-    <section id="tab-add" class="space-y-4 hidden">
-        <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg">
-            <h2 class="text-base font-bold mb-3 flex items-center">
-                <i class="fa-solid fa-circle-plus text-tg-primary mr-2"></i> Новое объявление
-            </h2>
-            <form id="add-service-form" onsubmit="handleCreateListing(event)" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-medium text-tg-hint mb-1">Название</label>
-                    <input type="text" id="form-title" required placeholder="Например: Ремонт телефонов / Помощь с дизайном"
-                           class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+    <!-- Main Content Tabs -->
+    <main class="px-4 py-4 max-w-2xl mx-auto">
+        
+        <!-- Tab 1: Catalog -->
+        <section id="tabCatalog" class="space-y-4">
+            <!-- Search & Filter -->
+            <div class="space-y-2.5">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
+                    <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, специалистов..." 
+                        class="w-full bg-tg-card text-tg-text pl-10 pr-4 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent/50 transition-colors">
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-tg-hint mb-1">Категория</label>
-                    <select id="form-category" class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-tg-primary">
-                        <option value="Услуги">Услуги</option>
-                        <option value="Товары">Товары</option>
-                        <option value="Недвижимость">Недвижимость</option>
-                        <option value="Авто">Авто</option>
-                        <option value="Разное">Разное</option>
-                    </select>
+                
+                <!-- Categories -->
+                <div class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1" id="categoryChips">
+                    <button onclick="selectCategory('all')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-button text-tg-buttonText transition-colors">Все</button>
+                    <button onclick="selectCategory('services')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Услуги</button>
+                    <button onclick="selectCategory('goods')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Товары</button>
+                    <button onclick="selectCategory('realestate')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Недвижимость</button>
+                    <button onclick="selectCategory('auto')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Авто</button>
+                    <button onclick="selectCategory('other')" class="cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors">Разное</button>
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Обычная цена (руб.)</label>
-                        <input type="text" id="form-reg-price" required placeholder="1500"
-                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="bg-tg-card rounded-2xl p-3.5 flex items-center justify-between border border-white/5 text-xs">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center">
+                        <i class="fa-solid fa-handshake"></i>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-tg-hint mb-1">Цена для своих (руб.)</label>
-                        <input type="text" id="form-friend-price" required placeholder="1000"
-                               class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                        <div class="text-tg-hint font-medium">Активных предложений</div>
+                        <div id="totalOffersCount" class="text-sm font-bold text-tg-text">0</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-tg-hint">Скидка для участников</div>
+                    <div class="text-emerald-400 font-bold">до −20%</div>
+                </div>
+            </div>
+
+            <!-- Services List -->
+            <div id="servicesList" class="space-y-3.5">
+                <div class="text-center py-12 text-tg-hint text-sm">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Загрузка предложений...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 2: My Services -->
+        <section id="tabMy" class="space-y-4 hidden">
+            <div class="flex items-center justify-between">
+                <h2 class="font-bold text-lg">Мои объявления</h2>
+                <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium flex items-center space-x-1">
+                    <i class="fa-solid fa-plus"></i><span>Добавить</span>
+                </button>
+            </div>
+            <div id="myServicesList" class="space-y-3.5">
+                <!-- User's own services -->
+            </div>
+        </section>
+
+        <!-- Tab 3: Admin Panel (Visible ONLY to klimk93) -->
+        <section id="tabAdmin" class="space-y-4 hidden">
+            <div class="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-2xl p-4">
+                <div class="flex items-center space-x-3 mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-base text-red-400">Панель администратора</h2>
+                        <p class="text-xs text-tg-hint">Полный контроль всех объявлений сообщества</p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3" id="adminServicesList">
+                <!-- Admin moderation list -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-tg-bg/95 backdrop-blur-md border-t border-white/5 px-6 py-2.5 flex justify-around items-center z-40 max-w-2xl mx-auto">
+        <button onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1 text-tg-accent transition-colors">
+            <i class="fa-solid fa-store text-lg"></i>
+            <span class="text-[10px] font-medium">Каталог</span>
+        </button>
+        <button onclick="switchTab('my')" id="navMy" class="flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors">
+            <i class="fa-solid fa-user-tag text-lg"></i>
+            <span class="text-[10px] font-medium">Мои</span>
+        </button>
+        <button onclick="switchTab('admin')" id="navAdmin" class="flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors hidden">
+            <i class="fa-solid fa-shield text-lg"></i>
+            <span class="text-[10px] font-medium">Админ</span>
+        </button>
+    </nav>
+
+    <!-- Create / Edit Modal -->
+    <div id="serviceModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 border border-white/10 max-h-[90vh] overflow-y-auto space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-white/5">
+                <h3 id="modalTitle" class="font-bold text-base">Новое объявление</h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-tg-card flex items-center justify-center text-tg-hint hover:text-tg-text">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <form id="serviceForm" onsubmit="saveService(event)" class="space-y-3.5">
+                <input type="hidden" id="editServiceId">
+                <div>
+                    <label class="block text-xs text-tg-hint mb-1">Название услуги или товара</label>
+                    <input type="text" id="serviceName" required placeholder="Например: Ремонт телефона / Аренда квартиры" 
+                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-tg-hint mb-1">Категория</label>
+                        <select id="serviceCategory" class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                            <option value="services">Услуги</option>
+                            <option value="goods">Товары</option>
+                            <option value="realestate">Недвижимость</option>
+                            <option value="auto">Авто</option>
+                            <option value="other">Разное</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-tg-hint mb-1">Обычная цена</label>
+                        <input type="text" id="servicePrice" required placeholder="1500 руб." 
+                            class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-tg-hint mb-1">Описание</label>
-                    <textarea id="form-desc" rows="3" required placeholder="Опишите подробнее ваше предложение..."
-                              class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary resize-none"></textarea>
+                    <label class="block text-xs text-tg-hint mb-1">Цена для своих / Скидка (необязательно)</label>
+                    <input type="text" id="serviceFriendPrice" placeholder="1000 руб. / Скидка 20%" 
+                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-tg-hint mb-1">Telegram для связи (username)</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-2 text-tg-hint text-sm">@</span>
-                        <input type="text" id="form-tg" required placeholder="username"
-                               class="w-full bg-tg-bg border border-tg-border rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
-                    </div>
+                    <label class="block text-xs text-tg-hint mb-1">Описание</label>
+                    <textarea id="serviceDesc" rows="3" required placeholder="Опишите подробно ваше предложение..." 
+                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent resize-none"></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-tg-hint mb-1">Ссылка на фото (URL)</label>
-                    <input type="url" id="form-image" placeholder="https://example.com/image.jpg (необязательно)"
-                           class="w-full bg-tg-bg border border-tg-border rounded-xl px-3 py-2 text-sm text-white placeholder-tg-hint focus:outline-none focus:border-tg-primary">
+                    <label class="block text-xs text-tg-hint mb-1">Ссылка на фото (URL, необязательно)</label>
+                    <input type="url" id="serviceImage" placeholder="https://example.com/photo.jpg" 
+                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
-                <button type="submit" class="w-full py-3 bg-tg-primary hover:bg-tg-primaryHover text-white font-semibold rounded-xl text-sm transition shadow-lg mt-2">
-                    Опубликовать в маркетплейс
+                <button type="submit" class="w-full bg-tg-button text-tg-buttonText font-medium py-3 rounded-xl text-sm shadow-lg shadow-tg-button/20 active:scale-95 transition-transform mt-2">
+                    Опубликовать
                 </button>
             </form>
         </div>
-    </section>
-
-    <!-- TAB 4: ADMIN PANEL (Strictly Admin Only) -->
-    <section id="tab-admin" class="space-y-4 hidden">
-        <div class="bg-tg-card border border-tg-border rounded-2xl p-4 shadow-lg border-l-4 border-l-amber-500">
-            <h2 class="text-base font-bold mb-1 flex items-center text-amber-400">
-                <i class="fa-solid fa-shield-halved mr-2"></i> Панель Администратора
-            </h2>
-            <p class="text-xs text-tg-hint mb-3">Этот раздел виден только владельцу приложения.</p>
-            <div class="grid grid-cols-2 gap-2 mb-4">
-                <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
-                    <span class="block text-xs text-tg-hint">Всего объявлений</span>
-                    <span id="admin-total-count" class="text-lg font-bold text-white">0</span>
-                </div>
-                <div class="bg-tg-bg p-3 rounded-xl border border-tg-border text-center">
-                    <span class="block text-xs text-tg-hint">Статус базы</span>
-                    <span class="text-xs font-bold text-emerald-400 mt-1 block">Активна (Firebase)</span>
-                </div>
-            </div>
-            <h3 class="text-sm font-bold mb-2">Управление всеми объявлениями:</h3>
-            <div id="admin-listings-container" class="space-y-2 max-h-96 overflow-y-auto">
-                <!-- Admin list -->
-            </div>
-        </div>
-    </section>
-
-</main>
-
-<!-- Bottom Navigation Bar -->
-<nav class="fixed bottom-0 left-0 right-0 z-40 bg-tg-card/95 backdrop-blur-md border-t border-tg-border py-2 px-4">
-    <div class="max-w-md mx-auto flex justify-around items-center">
-        <button onclick="switchTab('catalog')" id="btn-tab-catalog" class="flex flex-col items-center text-tg-primary transition py-1 px-3">
-            <i class="fa-solid fa-store text-lg mb-0.5"></i>
-            <span class="text-[10px] font-medium">Каталог</span>
-        </button>
-        <button onclick="switchTab('my-services')" id="btn-tab-my-services" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
-            <i class="fa-solid fa-list-check text-lg mb-0.5"></i>
-            <span class="text-[10px] font-medium">Мои</span>
-        </button>
-        <button onclick="switchTab('add')" id="btn-tab-add" class="flex flex-col items-center text-tg-hint hover:text-white transition py-1 px-3">
-            <i class="fa-solid fa-plus-circle text-lg mb-0.5"></i>
-            <span class="text-[10px] font-medium">Создать</span>
-        </button>
-        <!-- Admin Nav Tab (Hidden by default unless admin) -->
-        <button onclick="switchTab('admin')" id="btn-tab-admin" class="hidden flex-col items-center text-amber-400 transition py-1 px-3">
-            <i class="fa-solid fa-shield-halved text-lg mb-0.5"></i>
-            <span class="text-[10px] font-medium">Админ</span>
-        </button>
     </div>
-</nav>
 
-<!-- Custom Modal for Notifications / Confirmations -->
-<div id="custom-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-tg-card border border-tg-border rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-        <h3 id="modal-title" class="text-base font-bold text-white">Уведомление</h3>
-        <p id="modal-message" class="text-sm text-tg-hint">Текст сообщения...</p>
-        <div id="modal-buttons" class="flex space-x-2 pt-2">
-            <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Ок</button>
-        </div>
-    </div>
-</div>
+    <!-- Firebase SDK Setup & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<!-- Firebase SDK & App Logic -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-    // ==========================================
-    // НАСТРОЙКИ (ЗАПОЛНИТЕ ДЛЯ СВОЕГО СЕРВЕРА)
-    // ==========================================
-    
-    // 1. Укажите ваш Telegram username (без символа @), чтобы получить доступ админа
-    const ADMIN_USERNAME = "klimk93"; 
-
-    // 2. Вставьте сюда конфигурацию из вашей консоли Firebase (Project Settings -> General -> Your apps -> Web)
-    const firebaseConfig = typeof __firebase_config !== 'undefined' 
-        ? JSON.parse(__firebase_config) 
-        : {
+        // Firebase Configuration
+        const firebaseConfig = {
             apiKey: "AIzaSyB9Fck959BK1oMgAu05SEk6tD1QX7_fGw4",
             authDomain: "market-sublife.firebaseapp.com",
             projectId: "market-sublife",
-            storageBucket: "Вmarket-sublife.firebasestorage.app",
+            storageBucket: "market-sublife.firebasestorage.app",
             messagingSenderId: "73424570465",
-            appId: "1:73424570465:web:47facedab3b73a49fd8220"
+            appId: "1:73424570465:web:47facedab3b73a49fd8220",
+            measurementId: "G-5D330LC5LX"
         };
 
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'friends-marketplace-main';
+        // Strict Admin Username
+        const ADMIN_USERNAME = "klimk93";
 
-    // ==========================================
+        let db = null;
+        let isFirebaseConnected = false;
 
-    let app, db, auth;
-    let currentUser = null;
-    let allListings = [];
-    let currentCategory = 'all';
-    let searchQuery = '';
-
-    // Expose functions globally for HTML onclick handlers
-    window.switchTab = switchTab;
-    window.selectCategory = selectCategory;
-    window.filterListings = filterListings;
-    window.handleCreateListing = handleCreateListing;
-    window.deleteListing = deleteListing;
-    window.showModal = showModal;
-    window.closeModal = closeModal;
-
-    // Initialize Firebase & Auth
-    async function initFirebase() {
         try {
-            app = initializeApp(firebaseConfig);
+            const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            auth = getAuth(app);
-
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-            
-            currentUser = auth.currentUser;
-            console.log("Authenticated user ID:", currentUser?.uid);
-
-            // Init Telegram WebApp
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.ready();
-                tg.expand();
-                const user = tg.initDataUnsafe?.user;
-                if (user) {
-                    const name = user.first_name || user.username || "Пользователь";
-                    document.getElementById('user-greeting').textContent = `Привет, ${name}!`;
-                    if (user.username) {
-                        const tgInput = document.getElementById('form-tg');
-                        if (tgInput && !tgInput.value) {
-                            tgInput.value = user.username;
-                        }
-                    }
-                } else {
-                    document.getElementById('user-greeting').textContent = "Маркетплейс для своих";
-                }
-            } else {
-                document.getElementById('user-greeting').textContent = "Маркетплейс для своих";
-            }
-
-            checkAdminAccess();
-            setupRealtimeListener();
-
-        } catch (err) {
-            console.error("Firebase init error:", err);
-            document.getElementById('listings-container').innerHTML = `
-                <div class="text-center py-12 text-tg-danger px-4">
-                    <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
-                    <p class="text-sm font-bold">Ошибка подключения к базе данных.</p>
-                    <p class="text-xs text-tg-hint mt-1">Проверьте правильность ключей firebaseConfig в коде index.html</p>
-                </div>
-            `;
+            isFirebaseConnected = true;
+        } catch (e) {
+            console.error("Firebase init error:", e);
         }
-    }
 
-    function checkAdminAccess() {
-        if (!currentUser) return;
-        let isAdmin = false;
-
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        const username = tgUser?.username || "";
-
-        if (ADMIN_USERNAME && ADMIN_USERNAME !== "ваш_телеграм_username") {
-            if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
-                isAdmin = true;
-            }
+        // Telegram WebApp initialization
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
         }
+
+        const currentUser = tg?.initDataUnsafe?.user || {
+            id: 12345678,
+            first_name: "Пользователь",
+            username: "klimk93",
+            photo_url: ""
+        };
+
+        const currentUsernameClean = (currentUser.username || "").toLowerCase();
+        const isAdmin = currentUsernameClean === ADMIN_USERNAME.toLowerCase();
 
         if (isAdmin) {
-            document.getElementById('btn-tab-admin').classList.remove('hidden');
-            document.getElementById('btn-tab-admin').classList.add('flex');
-        } else {
-            document.getElementById('btn-tab-admin').classList.add('hidden');
-            document.getElementById('btn-tab-admin').classList.remove('flex');
+            document.getElementById('navAdmin').classList.remove('hidden');
         }
-    }
 
-    function setupRealtimeListener() {
-        if (!currentUser) return;
-        const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
-        
-        onSnapshot(listingsRef, (snapshot) => {
-            allListings = [];
-            snapshot.forEach((docSnap) => {
-                allListings.push({ id: docSnap.id, ...docSnap.data() });
+        document.getElementById('userName').textContent = `${currentUser.first_name}${currentUser.username ? ' (@' + currentUser.username + ')' : ''}`;
+        if (currentUser.photo_url) {
+            document.getElementById('userAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
+        }
+
+        let allServices = [];
+        let currentCategory = 'all';
+
+        function initRealtimeSync() {
+            if (!isFirebaseConnected || !db) {
+                document.getElementById('servicesList').innerHTML = `
+                    <div class="bg-tg-card rounded-2xl p-6 text-center space-y-3 border border-red-500/20">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl text-red-400"></i>
+                        <h3 class="font-bold text-sm text-tg-text">Ошибка подключения к базе данных</h3>
+                        <p class="text-xs text-tg-hint">Проверьте настройки Firestore в консоли Firebase.</p>
+                    </div>`;
+                return;
+            }
+
+            const q = query(collection(db, "services"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                allServices = [];
+                snapshot.forEach((docSnap) => {
+                    allServices.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderCatalog();
+                renderMyServices();
+                if (isAdmin) renderAdminPanel();
+                document.getElementById('totalOffersCount').textContent = allServices.length;
+            }, (error) => {
+                console.error("Firestore sync error:", error);
             });
-            allListings.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-            
+        }
+
+        window.selectCategory = function(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-chip').forEach(btn => {
+                btn.className = "cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-card text-tg-hint hover:text-tg-text transition-colors";
+            });
+            event.currentTarget.className = "cat-chip px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap bg-tg-button text-tg-buttonText transition-colors";
             renderCatalog();
-            renderMyServices();
-            renderAdminPanel();
-        }, (error) => {
-            console.error("Firestore snapshot error:", error);
-        });
-    }
+        };
 
-    // Tab Navigation
-    function switchTab(tabId) {
-        ['catalog', 'my-services', 'add', 'admin'].forEach(t => {
-            const el = document.getElementById(`tab-${t}`);
-            if (el) el.classList.add('hidden');
-            const btn = document.getElementById(`btn-tab-${t}`);
-            if (btn) {
-                btn.classList.remove('text-tg-primary', 'text-amber-400', 'text-white');
-                btn.classList.add('text-tg-hint');
-            }
-        });
+        window.filterServices = function() {
+            renderCatalog();
+        };
 
-        const targetTab = document.getElementById(`tab-${tabId}`);
-        if (targetTab) targetTab.classList.remove('hidden');
+        function renderCatalog() {
+            const queryText = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('servicesList');
 
-        const targetBtn = document.getElementById(`btn-tab-${tabId}`);
-        if (targetBtn) {
-            targetBtn.classList.remove('text-tg-hint');
-            if (tabId === 'admin') {
-                targetBtn.classList.add('text-amber-400');
-            } else {
-                targetBtn.classList.add('text-tg-primary');
-            }
-        }
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    // Category Selection
-    function selectCategory(cat) {
-        currentCategory = cat;
-        document.querySelectorAll('.cat-chip').forEach(btn => {
-            btn.classList.remove('bg-tg-primary', 'text-white');
-            btn.classList.add('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
-        });
-        event.currentTarget.classList.remove('bg-tg-card', 'border', 'border-tg-border', 'text-tg-hint');
-        event.currentTarget.classList.add('bg-tg-primary', 'text-white');
-        renderCatalog();
-    }
-
-    function filterListings() {
-        searchQuery = document.getElementById('search-input').value.toLowerCase();
-        renderCatalog();
-    }
-
-    // Render Catalog Feed
-    function renderCatalog() {
-        const container = document.getElementById('listings-container');
-        let filtered = allListings.filter(item => {
-            const matchCat = currentCategory === 'all' || item.category === currentCategory;
-            const matchSearch = !searchQuery || item.title.toLowerCase().includes(searchQuery) || item.description.toLowerCase().includes(searchQuery);
-            return matchCat && matchSearch;
-        });
-
-        if (filtered.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-16 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
-                    <i class="fa-solid fa-box-open text-3xl text-tg-hint"></i>
-                    <p class="text-sm font-semibold">Пока нет объявлений</p>
-                    <p class="text-xs text-tg-hint">Будьте первыми, кто предложит товар или услугу для своих!</p>
-                    <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = filtered.map(item => {
-            const isOwner = currentUser && item.userId === currentUser.uid;
-            const isUserAdmin = checkAdminUserHelper();
-            const canManage = isOwner || isUserAdmin;
-
-            const defaultImg = `https://placehold.co/400x250/242f3d/8a9ba8?text=${encodeURIComponent(item.category || 'Сервис')}`;
-            const imgSrc = item.imageUrl && item.imageUrl.startsWith('http') ? item.imageUrl : defaultImg;
-
-            return `
-                <div class="bg-tg-card border border-tg-border rounded-2xl overflow-hidden shadow-md transition hover:border-tg-primary/50 flex flex-col">
-                    <div class="relative h-40 w-full bg-tg-bg overflow-hidden">
-                        <img src="${imgSrc}" alt="${escapeHtml(item.title)}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x250/242f3d/8a9ba8?text=Фото'">
-                        <span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-                            ${escapeHtml(item.category)}
-                        </span>
-                        ${canManage ? `
-                            <button onclick="deleteListing('${item.id}')" class="absolute top-2.5 right-2.5 bg-red-600/80 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center transition shadow">
-                                <i class="fa-solid fa-trash text-xs"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
-                        <div>
-                            <h3 class="font-bold text-base text-white leading-snug">${escapeHtml(item.title)}</h3>
-                            <p class="text-xs text-tg-hint mt-1 line-clamp-2">${escapeHtml(item.description)}</p>
-                        </div>
-                        <div class="flex items-center justify-between pt-2 border-t border-tg-border/50">
-                            <div>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-sm font-bold text-emerald-400">${escapeHtml(item.friendPrice)} ₽</span>
-                                    <span class="text-xs text-tg-hint line-through">${escapeHtml(item.regularPrice)} ₽</span>
-                                </div>
-                                <span class="text-[10px] text-tg-hint">Цена для своих</span>
-                            </div>
-                            <a href="https://t.me/${escapeHtml(item.telegramUsername)}" target="_blank" 
-                               class="px-3.5 py-2 bg-tg-primary hover:bg-tg-primaryHover text-white text-xs font-semibold rounded-xl transition flex items-center shadow">
-                                <i class="fa-brands fa-telegram mr-1.5 text-sm"></i> Связаться
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // Render "My Services"
-    function renderMyServices() {
-        const container = queryMyServicesContainer();
-        if (!container || !currentUser) return;
-
-        const myListings = allListings.filter(item => item.userId === currentUser.uid);
-
-        if (myListings.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-12 bg-tg-card rounded-2xl border border-tg-border p-6 space-y-2">
-                    <i class="fa-solid fa-folder-open text-3xl text-tg-hint"></i>
-                    <p class="text-sm font-semibold">У вас пока нет объявлений</p>
-                    <p class="text-xs text-tg-hint">Создайте свое первое объявление, чтобы оно появилось в ленте.</p>
-                    <button onclick="switchTab('add')" class="mt-2 px-4 py-2 bg-tg-primary text-white text-xs font-semibold rounded-xl">Создать объявление</button>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = myListings.map(item => `
-            <div class="bg-tg-card border border-tg-border rounded-xl p-3.5 flex items-center justify-between shadow-sm">
-                <div class="flex items-center space-x-3 overflow-hidden">
-                    <div class="w-12 h-12 rounded-lg bg-tg-bg overflow-hidden flex-shrink-0">
-                        <img src="${item.imageUrl || 'https://placehold.co/100x100/242f3d/8a9ba8?text=Фото'}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="overflow-hidden">
-                        <h4 class="font-bold text-sm text-white truncate">${escapeHtml(item.title)}</h4>
-                        <p class="text-xs text-emerald-400 font-semibold">${escapeHtml(item.friendPrice)} ₽ <span class="text-tg-hint text-[10px] font-normal">("свои")</span></p>
-                    </div>
-                </div>
-                <button onclick="deleteListing('${item.id}')" class="p-2 text-tg-danger hover:bg-red-500/10 rounded-lg transition">
-                    <i class="fa-solid fa-trash text-sm"></i>
-                </button>
-            </div>
-        `).join('');
-    }
-
-    function queryMyServicesContainer() {
-        return document.getElementById('my-listings-container');
-    }
-
-    // Render Admin Panel
-    function renderAdminPanel() {
-        const container = document.getElementById('admin-listings-container');
-        const totalCountEl = document.getElementById('admin-total-count');
-        if (!container || !totalCountEl) return;
-
-        totalCountEl.textContent = allListings.length;
-
-        if (allListings.length === 0) {
-            container.innerHTML = `<p class="text-xs text-tg-hint text-center py-4">Список объявлений пуст</p>`;
-            return;
-        }
-
-        container.innerHTML = allListings.map(item => `
-            <div class="bg-tg-bg border border-tg-border rounded-xl p-3 flex items-center justify-between">
-                <div>
-                    <h4 class="font-bold text-xs text-white">${escapeHtml(item.title)}</h4>
-                    <p class="text-[10px] text-tg-hint">Категория: ${escapeHtml(item.category)} • @${escapeHtml(item.telegramUsername)}</p>
-                </div>
-                <button onclick="deleteListing('${item.id}')" class="px-2.5 py-1.5 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-medium rounded-lg transition">
-                    Удалить
-                </button>
-            </div>
-        `).join('');
-    }
-
-    function checkAdminUserHelper() {
-        const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-        const username = tgUser?.username || "";
-        if (ADMIN_USERNAME && ADMIN_USERNAME !== "ваш_телеграм_username") {
-            if (username.toLowerCase() === ADMIN_USERNAME.toLowerCase()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // Handle Create Listing Form Submission
-    async function handleCreateListing(e) {
-        e.preventDefault();
-        if (!currentUser) {
-            showModal("Ошибка", "Не удалось определить пользователя. Пожалуйста, перезапустите приложение.");
-            return;
-        }
-
-        const title = document.getElementById('form-title').value.trim();
-        const category = document.getElementById('form-category').value;
-        const regularPrice = document.getElementById('form-reg-price').value.trim();
-        const friendPrice = document.getElementById('form-friend-price').value.trim();
-        const description = document.getElementById('form-desc').value.trim();
-        const telegramUsername = document.getElementById('form-tg').value.trim().replace(/^@/, '');
-        const imageUrl = document.getElementById('form-image').value.trim();
-
-        if (!title || !regularPrice || !friendPrice || !description || !telegramUsername) {
-            showModal("Ошибка", "Пожалуйста, заполните все обязательные поля.");
-            return;
-        }
-
-        try {
-            const listingsRef = collection(db, 'artifacts', appId, 'public', 'data', 'listings');
-            await addDoc(listingsRef, {
-                title,
-                category,
-                regularPrice,
-                friendPrice,
-                description,
-                telegramUsername,
-                imageUrl,
-                userId: currentUser.uid,
-                createdAt: Date.now()
+            let filtered = allServices.filter(s => {
+                const matchesCat = currentCategory === 'all' || s.category === currentCategory;
+                const matchesQuery = s.name.toLowerCase().includes(queryText) || s.desc.toLowerCase().includes(queryText) || s.authorName.toLowerCase().includes(queryText);
+                return matchesCat && matchesQuery;
             });
 
-            document.getElementById('add-service-form').reset();
-            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
-            if (tgUser?.username) {
-                document.getElementById('form-tg').value = tgUser.username;
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 space-y-2">
+                        <div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <p class="text-sm font-medium text-tg-text">Пока нет объявлений</p>
+                        <p class="text-xs text-tg-hint">Нажмите «Создать», чтобы добавить первое предложение!</p>
+                    </div>`;
+                return;
             }
 
-            showModal("Успешно!", "Ваше объявление опубликовано и теперь видно всем пользователям.");
-            switchTab('catalog');
-
-        } catch (err) {
-            console.error("Error adding listing:", err);
-            showModal("Ошибка", "Не удалось сохранить объявление. Попробуйте еще раз.");
+            container.innerHTML = filtered.map(s => renderCardHtml(s)).join('');
         }
-    }
 
-    // Delete Listing
-    async function deleteListing(id) {
-        showConfirm("Удаление", "Вы действительно хотите удалить это объявление?", async () => {
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'listings', id);
-                await deleteDoc(docRef);
-                showModal("Успешно", "Объявление удалено.");
-            } catch (err) {
-                console.error("Error deleting listing:", err);
-                showModal("Ошибка", "Не удалось удалить объявление.");
+        function renderMyServices() {
+            const container = document.getElementById('myServicesList');
+            const mine = allServices.filter(s => String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase()));
+
+            if (mine.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 space-y-2">
+                        <div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl">
+                            <i class="fa-solid fa-user-pen"></i>
+                        </div>
+                        <p class="text-sm font-medium text-tg-text">У вас нет активных объявлений</p>
+                        <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать объявление</button>
+                    </div>`;
+                return;
             }
-        });
-    }
 
-    // Custom Modal Helpers
-    function showModal(title, message, onOk = null) {
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-message').textContent = message;
-        const buttonsContainer = document.getElementById('modal-buttons');
-        
-        buttonsContainer.innerHTML = `
-            <button onclick="closeModal(); ${onOk ? '(' + onOk.toString() + ')()' : ''}" class="flex-1 py-2.5 bg-tg-primary hover:bg-tg-primaryHover text-white font-medium rounded-xl text-sm transition">Ок</button>
-        `;
-        document.getElementById('custom-modal').classList.remove('hidden');
-    }
+            container.innerHTML = mine.map(s => renderCardHtml(s, true)).join('');
+        }
 
-    function showConfirm(title, message, onConfirm) {
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-message').textContent = message;
-        const buttonsContainer = document.getElementById('modal-buttons');
-        
-        buttonsContainer.innerHTML = `
-            <button onclick="closeModal()" class="flex-1 py-2.5 bg-tg-border hover:bg-tg-border/80 text-white font-medium rounded-xl text-sm transition">Отмена</button>
-            <button id="modal-confirm-btn" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl text-sm transition">Удалить</button>
-        `;
-        document.getElementById('custom-modal').classList.add('flex');
-        document.getElementById('custom-modal').classList.remove('hidden');
+        function renderAdminPanel() {
+            const container = document.getElementById('adminServicesList');
+            if (allServices.length === 0) {
+                container.innerHTML = `<p class="text-xs text-tg-hint text-center py-8">Нет объявлений для модерации.</p>`;
+                return;
+            }
+            container.innerHTML = allServices.map(s => `
+                <div class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5">
+                    <div class="min-w-0 pr-2">
+                        <div class="font-semibold text-sm truncate">${s.name}</div>
+                        <div class="text-xs text-tg-hint">Автор: @${s.authorUsername || 'unknown'} • ${s.price}</div>
+                    </div>
+                    <div class="flex items-center space-x-2 flex-shrink-0">
+                        <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        document.getElementById('modal-confirm-btn').onclick = () => {
-            closeModal();
-            onConfirm();
+        function renderCardHtml(s, showControls = false) {
+            const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+            const canManage = showControls || isOwner || isAdmin;
+            return `
+                <div class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm">
+                    ${s.imageUrl ? `<div class="h-44 w-full bg-cover bg-center" style="background-image: url('${s.imageUrl}')"></div>` : ''}
+                    <div class="p-4 space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${getCategoryName(s.category)}</span>
+                                <h3 class="font-bold text-base mt-1.5">${s.name}</h3>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <div class="text-sm font-bold text-tg-text">${s.price}</div>
+                                ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-bolt mr-1"></i>${s.friendPrice}</div>` : ''}
+                            </div>
+                        </div>
+                        <p class="text-xs text-tg-hint leading-relaxed whitespace-pre-wrap">${s.desc}</p>
+                        <div class="flex items-center justify-between pt-2 border-t border-white/5">
+                            <div class="flex items-center space-x-2 min-w-0 pr-2">
+                                <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                    <i class="fa-solid fa-user text-[10px]"></i>
+                                </div>
+                                <span class="text-xs text-tg-hint truncate">@${s.authorUsername || 'friend'}</span>
+                            </div>
+                            <div class="flex items-center space-x-2 flex-shrink-0">
+                                ${canManage ? `
+                                    <button onclick="openEditModal('${s.id}')" class="bg-tg-bg text-tg-hint hover:text-tg-text px-3 py-1.5 rounded-xl text-xs font-medium transition-colors">
+                                        <i class="fa-solid fa-pen mr-1"></i> Править
+                                    </button>
+                                    <button onclick="deleteService('${s.id}')" class="bg-red-500/10 text-red-400 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors">
+                                        <i class="fa-solid fa-trash mr-1"></i> Удалить
+                                    </button>
+                                ` : ''}
+                                <a href="https://t.me/${s.authorUsername || ''}" target="_blank" class="bg-tg-button text-tg-buttonText px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center space-x-1.5 shadow-md shadow-tg-button/20">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                    <span>Связаться</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCategoryName(cat) {
+            const map = { services: 'Услуги', goods: 'Товары', realestate: 'Недвижимость', auto: 'Авто', other: 'Разное' };
+            return map[cat] || 'Услуга';
+        }
+
+        window.switchTab = function(tab) {
+            document.getElementById('tabCatalog').classList.add('hidden');
+            document.getElementById('tabMy').classList.add('hidden');
+            document.getElementById('tabAdmin').classList.add('hidden');
+
+            document.getElementById('navCatalog').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
+            document.getElementById('navMy').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
+            if (isAdmin) document.getElementById('navAdmin').className = "flex flex-col items-center space-y-1 text-tg-hint hover:text-tg-text transition-colors";
+
+            if (tab === 'catalog') {
+                document.getElementById('tabCatalog').classList.remove('hidden');
+                document.getElementById('navCatalog').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
+            } else if (tab === 'my') {
+                document.getElementById('tabMy').classList.remove('hidden');
+                document.getElementById('navMy').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
+            } else if (tab === 'admin' && isAdmin) {
+                document.getElementById('tabAdmin').classList.remove('hidden');
+                document.getElementById('navAdmin').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
+            }
         };
-    }
 
-    function closeModal() {
-        document.getElementById('custom-modal').classList.add('hidden');
-        document.getElementById('custom-modal').classList.remove('flex');
-    }
+        window.openAddModal = function() {
+            document.getElementById('modalTitle').textContent = "Новое объявление";
+            document.getElementById('editServiceId').value = "";
+            document.getElementById('serviceForm').reset();
+            document.getElementById('serviceModal').classList.remove('hidden');
+        };
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+        window.openEditModal = function(id) {
+            const s = allServices.find(item => item.id === id);
+            if (!s) return;
+            document.getElementById('modalTitle').textContent = "Редактировать объявление";
+            document.getElementById('editServiceId').value = s.id;
+            document.getElementById('serviceName').value = s.name;
+            document.getElementById('serviceCategory').value = s.category;
+            document.getElementById('servicePrice').value = s.price;
+            document.getElementById('serviceFriendPrice').value = s.friendPrice || "";
+            document.getElementById('serviceDesc').value = s.desc;
+            document.getElementById('serviceImage').value = s.imageUrl || "";
+            document.getElementById('serviceModal').classList.remove('hidden');
+        };
 
-    window.addEventListener('DOMContentLoaded', () => {
-        initFirebase();
-    });
-</script>
+        window.closeModal = function() {
+            document.getElementById('serviceModal').classList.add('hidden');
+        };
+
+        window.saveService = async function(e) {
+            e.preventDefault();
+            if (!isFirebaseConnected || !db) {
+                alert("База данных Firebase не подключена.");
+                return;
+            }
+
+            const id = document.getElementById('editServiceId').value;
+            const data = {
+                name: document.getElementById('serviceName').value,
+                category: document.getElementById('serviceCategory').value,
+                price: document.getElementById('servicePrice').value,
+                friendPrice: document.getElementById('serviceFriendPrice').value,
+                desc: document.getElementById('serviceDesc').value,
+                imageUrl: document.getElementById('serviceImage').value,
+                authorId: currentUser.id,
+                authorName: currentUser.first_name,
+                authorUsername: currentUser.username || 'user',
+                createdAt: Date.now()
+            };
+
+            try {
+                if (id) {
+                    await updateDoc(doc(db, "services", id), data);
+                } else {
+                    await addDoc(collection(db, "services"), data);
+                }
+                closeModal();
+            } catch (err) {
+                console.error("Error saving service:", err);
+                alert("Ошибка сохранения: " + err.message);
+            }
+        };
+
+        window.deleteService = async function(id) {
+            if (!confirm("Вы действительно хотите удалить это объявление?")) return;
+            try {
+                await deleteDoc(doc(db, "services", id));
+            } catch (err) {
+                console.error("Error deleting service:", err);
+                alert("Ошибка удаления: " + err.message);
+            }
+        };
+
+        initRealtimeSync();
+    </script>
+</body>
+</html>
