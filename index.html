@@ -236,10 +236,10 @@
                 </div>
                 <div class="bg-tg-card p-3 rounded-2xl border border-white/5">
                     <div class="text-tg-hint text-[11px] flex items-center justify-between">
-                        <span>Приглашений (Ref)</span>
-                        <i class="fa-solid fa-user-plus text-amber-400/70"></i>
+                        <span>Активных / VIP</span>
+                        <i class="fa-solid fa-crown text-amber-400/70"></i>
                     </div>
-                    <div id="adminStatTotalRef" class="text-xl font-bold text-amber-400 mt-1">0</div>
+                    <div id="adminStatActiveVip" class="text-xl font-bold text-amber-400 mt-1">0 / 0</div>
                 </div>
             </div>
 
@@ -937,7 +937,7 @@
             return isNaN(num) ? 0 : num;
         }
 
-        function renderCatalog() {
+        window.renderCatalog = function() {
             const queryText = document.getElementById('searchInput').value.toLowerCase().trim();
             const minPrice = parseInt(document.getElementById('minPriceInput').value, 10) || 0;
             const maxPrice = parseInt(document.getElementById('maxPriceInput').value, 10) || Infinity;
@@ -998,7 +998,7 @@
             container.innerHTML = filtered.map(s => renderCardHtml(s)).join('');
         }
 
-        function renderMyServices() {
+        window.renderMyServices = function() {
             const container = document.getElementById('myServicesList');
             const mine = allServices.filter(s => String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase()));
 
@@ -1017,29 +1017,46 @@
             container.innerHTML = mine.map(s => renderCardHtml(s, true)).join('');
         }
 
+        // PERFECTED ADMIN PANEL CALCULATIONS & RENDERING
         function renderAdminPanel() {
             if (!isAdmin) return;
 
-            const authorsMap = {};
             let totalViews = 0;
-            let totalRefInvites = 0;
+            let totalActiveOffers = 0;
+            let totalVipOffers = 0;
+            const authorsMap = {};
+            const uniqueUsersSet = new Set();
 
-            allServices.forEach(s => {
-                const uname = (s.authorUsername || 'unknown').toLowerCase();
-                authorsMap[uname] = (authorsMap[uname] || 0) + 1;
-                totalViews += (s.views || 0);
-            });
-
+            // 1. Gather Unique Users from allUsers collection
             allUsers.forEach(u => {
-                totalRefInvites += (u.invitedCount || 0);
+                if (u.id) uniqueUsersSet.add(String(u.id));
+                if (u.username) uniqueUsersSet.add(u.username.toLowerCase());
             });
 
-            const totalUsersCount = Math.max(allUsers.length, Object.keys(authorsMap).length);
+            // 2. Aggregate service metrics and authors correctly
+            allServices.forEach(s => {
+                totalViews += (s.views || 0);
+                const st = s.status || 'active';
+                if (st === 'active') totalActiveOffers++;
+                if (s.isFeatured) totalVipOffers++;
 
+                if (s.authorUsername) {
+                    const uname = s.authorUsername.toLowerCase();
+                    authorsMap[uname] = (authorsMap[uname] || 0) + 1;
+                    uniqueUsersSet.add(uname);
+                }
+                if (s.authorId) {
+                    uniqueUsersSet.add(String(s.authorId));
+                }
+            });
+
+            const totalUsersCount = uniqueUsersSet.size;
+
+            // Update Admin Header Stat Cards
             document.getElementById('adminStatAppLaunches').textContent = globalStats.totalLaunches || 0;
             document.getElementById('adminStatTotalViews').textContent = totalViews;
             document.getElementById('adminStatTotalUsers').textContent = totalUsersCount;
-            document.getElementById('adminStatTotalRef').textContent = totalRefInvites;
+            document.getElementById('adminStatActiveVip').textContent = `${totalActiveOffers} / ${totalVipOffers}`;
             document.getElementById('allUsersBadge').textContent = totalUsersCount;
 
             renderActivityChart();
@@ -1048,10 +1065,10 @@
             const refLeadersContainer = document.getElementById('adminRefLeadersList');
             const sortedUsersByRef = [...allUsers].sort((a, b) => (b.invitedCount || 0) - (a.invitedCount || 0));
             
-            if (sortedUsersByRef.length === 0) {
-                refLeadersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет приглашенных участников.</p>`;
+            if (sortedUsersByRef.length === 0 || !sortedUsersByRef.some(u => (u.invitedCount || 0) > 0)) {
+                refLeadersContainer.innerHTML = `<p class="text-xs text-tg-hint text-center py-2">Пока нет приглашенных участников.</p>`;
             } else {
-                refLeadersContainer.innerHTML = sortedUsersByRef.map((u, index) => {
+                refLeadersContainer.innerHTML = sortedUsersByRef.filter(u => (u.invitedCount || 0) > 0).map((u, index) => {
                     const invites = u.invitedCount || 0;
                     return `
                         <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
@@ -1067,6 +1084,7 @@
                 }).join('');
             }
 
+            // Connected Users List
             const usersContainer = document.getElementById('adminUsersList');
             const combinedUsers = [...allUsers];
             Object.keys(authorsMap).forEach(uname => {
@@ -1076,7 +1094,7 @@
             });
 
             if (combinedUsers.length === 0) {
-                usersContainer.innerHTML = `<p class="text-xs text-tg-hint">Пока нет участников.</p>`;
+                usersContainer.innerHTML = `<p class="text-xs text-tg-hint text-center py-2">Пока нет участников.</p>`;
             } else {
                 usersContainer.innerHTML = combinedUsers.map(u => {
                     const uname = u.username || 'unknown';
@@ -1105,6 +1123,7 @@
                 }).join('');
             }
 
+            // Moderation Services List
             const container = document.getElementById('adminServicesList');
             let filteredAdminServices = allServices.filter(s => {
                 const st = s.status || 'active';
@@ -1151,7 +1170,7 @@
             return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="event.stopPropagation(); setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
         }
 
-        function renderCardHtml(s, showControls = false) {
+        window.renderCardHtml = function(s, showControls = false) {
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
             const canManage = showControls || isOwner || isAdmin;
             const displayShortDesc = s.shortDesc || s.desc || '';
