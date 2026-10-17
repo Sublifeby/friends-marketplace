@@ -206,7 +206,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-base text-red-400">Панель администратора</h2>
-                        <p class="text-xs text-tg-hint">Статистика, период, модерация и рассылки</p>
+                        <p class="text-xs text-tg-hint">Статистика, период, модерация, VIP и рассылки</p>
                     </div>
                 </div>
             </div>
@@ -304,7 +304,7 @@
                 </div>
             </div>
 
-            <!-- Moderation List with Status Filter -->
+            <!-- Moderation List with Status Filter & VIP Toggle -->
             <div class="space-y-3">
                 <div class="flex items-center justify-between px-1">
                     <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
@@ -660,6 +660,18 @@
             renderMyServices();
         };
 
+        // Admin Action: Toggle VIP / Featured Status
+        window.toggleServiceFeatured = async function(id, currentStatus) {
+            if (!isAdmin) return;
+            try {
+                const serviceRef = doc(db, "services", id);
+                await updateDoc(serviceRef, { isFeatured: !currentStatus });
+            } catch (err) {
+                console.error("Error toggling featured status:", err);
+                alert("Ошибка изменения VIP-статуса: " + err.message);
+            }
+        };
+
         window.appendTagPreset = function(tagName) {
             const input = document.getElementById('serviceTags');
             let currentVal = input.value.trim();
@@ -934,7 +946,14 @@
                 return s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || tagsText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
             });
 
+            // VIP / Featured Priority Sorting
             filtered.sort((a, b) => {
+                const aFeatured = a.isFeatured ? 1 : 0;
+                const bFeatured = b.isFeatured ? 1 : 0;
+                if (aFeatured !== bFeatured) {
+                    return bFeatured - aFeatured; // VIP first
+                }
+
                 if (sortMode === 'price_asc') {
                     return parsePrice(a.price) - parsePrice(b.price);
                 } else if (sortMode === 'price_desc') {
@@ -1082,16 +1101,21 @@
 
             container.innerHTML = filteredAdminServices.map(s => {
                 const isArchived = (s.status || 'active') === 'archived';
+                const isFeatured = !!s.isFeatured;
                 return `
                     <div class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5">
                         <div class="min-w-0 pr-2">
                             <div class="flex items-center space-x-2">
                                 <span class="font-semibold text-sm truncate">${s.name}</span>
+                                ${isFeatured ? '<span class="text-[9px] bg-amber-400/20 text-amber-400 font-bold px-2 py-0.5 rounded-full border border-amber-400/30">★ VIP</span>' : ''}
                                 ${isArchived ? '<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full">Архив</span>' : '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full">Активно</span>'}
                             </div>
                             <div class="text-xs text-tg-hint mt-0.5">Автор: @${s.authorUsername || 'unknown'} • ${s.price || 'Договорная'} • Просмотров: ${s.views || 0}</div>
                         </div>
-                        <div class="flex items-center space-x-2 flex-shrink-0">
+                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                            <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured})" title="Закрепить как VIP" class="w-8 h-8 rounded-xl ${isFeatured ? 'bg-amber-400 text-black font-bold' : 'bg-tg-bg text-tg-hint hover:text-amber-400'} flex items-center justify-center text-xs transition-colors">
+                                <i class="fa-solid fa-star"></i>
+                            </button>
                             <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
                             <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
@@ -1114,6 +1138,7 @@
             const favorites = getFavorites();
             const isFav = favorites.includes(s.id);
             const isArchived = (s.status || 'active') === 'archived';
+            const isFeatured = !!s.isFeatured;
 
             const reviews = s.reviews || [];
             const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
@@ -1122,8 +1147,9 @@
             const myNoteStatus = contactStatuses[s.id];
 
             return `
-                <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99] relative">
-                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border ${isFeatured ? 'border-amber-400/50 shadow-lg shadow-amber-400/10' : 'border-white/5'} shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99] relative">
+                    ${isFeatured ? '<div class="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center space-x-1"><i class="fa-solid fa-crown text-[9px]"></i><span>VIP</span></div>' : ''}
+                    ${isArchived ? `<div class="absolute top-3 ${isFeatured ? 'left-16' : 'left-3'} z-10 bg-black/70 backdrop-blur-md text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>` : ''}
                     ${myNoteStatus ? `<div class="absolute top-3 right-3 z-10 bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md"><i class="fa-solid fa-check mr-1"></i>${myNoteStatus}</div>` : ''}
                     ${s.imageUrl ? `<div class="h-44 w-full bg-cover bg-center ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : ''}
                     <div class="p-4 space-y-3">
@@ -1252,6 +1278,10 @@
             const favorites = getFavorites();
             const isFav = favorites.includes(s.id);
             const isArchived = (s.status || 'active') === 'archived';
+            const isFeatured = !!s.isFeatured;
+
+            const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+            const canEdit = isOwner || isAdmin;
 
             const reviews = s.reviews || [];
             const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
@@ -1265,7 +1295,8 @@
                     <button onclick="closeDetailModal()" class="sticky top-3 float-right mr-3 z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
-                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                    ${isFeatured ? '<div class="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center space-x-1"><i class="fa-solid fa-crown text-[10px]"></i><span>VIP Закреплено</span></div>' : ''}
+                    ${isArchived ? `<div class="absolute top-3 ${isFeatured ? 'left-36' : 'left-3'} z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>` : ''}
                     ${s.imageUrl ? `<div class="h-60 w-full bg-cover bg-center rounded-t-3xl sm:rounded-t-2xl ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : '<div class="h-8"></div>'}
                 </div>
                 <div class="p-5 space-y-4">
@@ -1304,6 +1335,12 @@
                             </div>
                         </div>
                         <div class="flex items-center space-x-2">
+                            ${canEdit ? `
+                                <button onclick="closeDetailModal(); openEditModal('${s.id}')" class="p-2 rounded-xl bg-tg-accent/20 text-tg-accent hover:bg-tg-accent hover:text-white text-xs font-medium transition-colors flex items-center space-x-1">
+                                    <i class="fa-solid fa-pen"></i>
+                                    <span class="text-[11px]">Редактировать</span>
+                                </button>
+                            ` : ''}
                             <button onclick="shareService('${s.id}', '${s.name}', event)" class="p-2 rounded-xl bg-tg-bg text-xs font-medium text-tg-text border border-white/5">
                                 <i class="fa-solid fa-share-nodes"></i>
                             </button>
@@ -1547,7 +1584,8 @@
                 authorName: existingService ? existingService.authorName : currentUser.first_name,
                 authorUsername: existingService ? existingService.authorUsername : (currentUser.username || 'user'),
                 authorAvatar: existingService ? existingService.authorAvatar : (currentUser.photo_url || ''),
-                createdAt: existingService ? (existingService.createdAt || Date.now()) : Date.now()
+                createdAt: existingService ? (existingService.createdAt || Date.now()) : Date.now(),
+                isFeatured: existingService ? !!existingService.isFeatured : false
             };
 
             try {
