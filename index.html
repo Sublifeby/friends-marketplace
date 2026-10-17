@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Маркетплейс для своих</title>
+    
+    <!-- PWA Web App Manifest -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Маркетплейс для своих","short_name":"Friends Market","start_url":".","display":"standalone","background_color":"#18222d","theme_color":"#18222d"}'>
+    <meta name="theme-color" content="#18222d">
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -64,12 +69,12 @@
         
         <!-- Tab 1: Catalog -->
         <section id="tabCatalog" class="space-y-4">
-            <!-- Search, Sort & Filter -->
+            <!-- Search, Sort & Price Filter -->
             <div class="space-y-2.5">
                 <div class="flex space-x-2">
                     <div class="relative flex-1">
                         <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
-                        <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, специалистов..." 
+                        <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, тегов..." 
                             class="w-full bg-tg-card text-tg-text pl-10 pr-4 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent/50 transition-colors">
                     </div>
                     <select id="sortSelect" onchange="filterServices()" class="bg-tg-card text-tg-text px-3 py-2.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
@@ -77,6 +82,22 @@
                         <option value="price_asc">Сначала дешевле</option>
                         <option value="price_desc">Сначала дороже</option>
                     </select>
+                </div>
+
+                <!-- Price Range Filter -->
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" id="minPriceInput" oninput="filterServices()" placeholder="Цена от (руб.)" class="bg-tg-card text-tg-text px-3 py-1.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
+                    <input type="number" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до (руб.)" class="bg-tg-card text-tg-text px-3 py-1.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
+                </div>
+
+                <!-- Fast UX Tags -->
+                <div class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5 text-[11px]">
+                    <button onclick="setSearchTag('#снаряжение')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#снаряжение</button>
+                    <button onclick="setSearchTag('#дайвинг')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#дайвинг</button>
+                    <button onclick="setSearchTag('#подводнаяохота')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#подводнаяохота</button>
+                    <button onclick="setSearchTag('#обучение')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#обучение</button>
+                    <button onclick="setSearchTag('#аренда')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#аренда</button>
+                    <button onclick="setSearchTag('#ремонт')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#ремонт</button>
                 </div>
                 
                 <!-- Categories -->
@@ -91,7 +112,7 @@
                 </div>
             </div>
 
-            <!-- Stats Bar -->
+            <!-- Stats Bar (Updated Text: Скидка для участников до -99%) -->
             <div class="bg-tg-card rounded-2xl p-3.5 flex items-center justify-between border border-white/5 text-xs">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center">
@@ -104,7 +125,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-tg-hint">Скидка для участников</div>
-                    <div class="text-emerald-400 font-bold">до −20%</div>
+                    <div class="text-emerald-400 font-bold">до −99%</div>
                 </div>
             </div>
 
@@ -319,6 +340,15 @@
         </button>
     </nav>
 
+    <!-- Seller Profile Modal -->
+    <div id="sellerModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 p-5">
+            <div id="sellerContent">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
     <!-- Service Detail View Modal -->
     <div id="detailModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
         <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6">
@@ -341,7 +371,7 @@
                 <input type="hidden" id="editServiceId">
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Название услуги или товара</label>
-                    <input type="text" id="serviceName" required placeholder="Например: Ремонт телефона / Аренда квартиры" 
+                    <input type="text" id="serviceName" required placeholder="Например: Ремонт телефона / Аренда квартиры #ремонт" 
                         class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -365,14 +395,15 @@
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs text-tg-hint mb-1">Обычная цена</label>
-                        <input type="text" id="servicePrice" required placeholder="1500 руб." 
+                        <label class="block text-xs text-tg-hint mb-1">Обычная цена (необязательно)</label>
+                        <input type="text" id="servicePrice" placeholder="Например: 1500 руб. или Договорная" 
                             class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                     </div>
                     <div>
-                        <label class="block text-xs text-tg-hint mb-1">Цена для своих (необязательно)</label>
-                        <input type="text" id="serviceFriendPrice" placeholder="1000 руб." 
+                        <label class="block text-xs text-tg-hint mb-1">Цена для своих</label>
+                        <input type="text" id="serviceFriendPrice" placeholder="1000 руб. или Скидка 15%" 
                             class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                        <p class="text-[10px] text-tg-hint mt-1">Подсказка: можно указать стоимость (1000 руб.) или размер скидки (Скидка 15%)</p>
                     </div>
                 </div>
                 <div>
@@ -382,7 +413,7 @@
                 </div>
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Полное описание (отображается при открытии)</label>
-                    <textarea id="serviceDesc" rows="4" required placeholder="Подробно опишите условия, характеристики, варианты оплаты и т.д..." 
+                    <textarea id="serviceDesc" rows="4" required placeholder="Подробно опишите условия, характеристики, варианты оплаты и теги..." 
                         class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent resize-none"></textarea>
                 </div>
                 <div>
@@ -403,6 +434,23 @@
             </form>
         </div>
     </div>
+
+    <!-- Service Worker Registration for PWA & Offline Support -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    self.addEventListener('install', (e) => self.skipWaiting());
+                    self.addEventListener('activate', (e) => self.clients.claim());
+                    self.addEventListener('fetch', (e) => {
+                        e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+            });
+        }
+    </script>
 
     <!-- Firebase SDK Setup & App Logic -->
     <script type="module">
@@ -504,12 +552,26 @@
             }
         };
 
-        function getFavorites() {
-            try {
-                return JSON.parse(localStorage.getItem('sublife_favorites') || '[]');
-            } catch (e) {
-                return [];
+        // Order Contact Statuses Local Storage Management
+        function getContactStatuses() {
+            try { return JSON.parse(localStorage.getItem('sublife_contact_statuses') || '{}'); } catch(e) { return {}; }
+        }
+
+        window.toggleContactStatus = function(serviceId, statusText) {
+            const statuses = getContactStatuses();
+            if (statuses[serviceId] === statusText) {
+                delete statuses[serviceId];
+            } else {
+                statuses[serviceId] = statusText;
             }
+            localStorage.setItem('sublife_contact_statuses', JSON.stringify(statuses));
+            renderCatalog();
+            renderMyServices();
+            openDetailModal(serviceId);
+        };
+
+        function getFavorites() {
+            try { return JSON.parse(localStorage.getItem('sublife_favorites') || '[]'); } catch (e) { return []; }
         }
 
         window.toggleFavorite = function(id, event) {
@@ -597,6 +659,12 @@
                 if (isAdmin) renderAdminPanel();
             });
         }
+
+        window.setSearchTag = function(tag) {
+            const input = document.getElementById('searchInput');
+            input.value = tag;
+            filterServices();
+        };
 
         window.changeChartTimeframe = function(timeframe) {
             currentChartTimeframe = timeframe;
@@ -751,7 +819,9 @@
         }
 
         function renderCatalog() {
-            const queryText = document.getElementById('searchInput').value.toLowerCase();
+            const queryText = document.getElementById('searchInput').value.toLowerCase().trim();
+            const minPrice = parseInt(document.getElementById('minPriceInput').value, 10) || 0;
+            const maxPrice = parseInt(document.getElementById('maxPriceInput').value, 10) || Infinity;
             const sortMode = document.getElementById('sortSelect').value;
             const container = document.getElementById('servicesList');
             const favorites = getFavorites();
@@ -765,6 +835,10 @@
                 } else if (currentCategory !== 'all') {
                     if (s.category !== currentCategory) return false;
                 }
+
+                // Price filtering
+                const numericPrice = parsePrice(s.friendPrice || s.price);
+                if (numericPrice < minPrice || numericPrice > maxPrice) return false;
 
                 const shortText = (s.shortDesc || s.desc || '').toLowerCase();
                 const fullText = (s.desc || '').toLowerCase();
@@ -788,7 +862,7 @@
                             <i class="fa-solid fa-box-open"></i>
                         </div>
                         <p class="text-sm font-medium text-tg-text">${currentCategory === 'favorites' ? 'В избранном пока ничего нет' : 'Пока нет объявлений'}</p>
-                        <p class="text-xs text-tg-hint">Добавляйте карточки в избранное или создайте свое!</p>
+                        <p class="text-xs text-tg-hint">Попробуйте изменить параметры поиска или добавьте свое!</p>
                     </div>`;
                 return;
             }
@@ -816,7 +890,6 @@
         }
 
         function renderAdminPanel() {
-            // Security check: only admin can view
             if (!isAdmin) return;
 
             const authorsMap = {};
@@ -927,7 +1000,7 @@
                                 <span class="font-semibold text-sm truncate">${s.name}</span>
                                 ${isArchived ? '<span class="text-[9px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded-full">Архив</span>' : '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full">Активно</span>'}
                             </div>
-                            <div class="text-xs text-tg-hint mt-0.5">Автор: @${s.authorUsername || 'unknown'} • ${s.price} • Просмотров: ${s.views || 0}</div>
+                            <div class="text-xs text-tg-hint mt-0.5">Автор: @${s.authorUsername || 'unknown'} • ${s.price || 'Договорная'} • Просмотров: ${s.views || 0}</div>
                         </div>
                         <div class="flex items-center space-x-2 flex-shrink-0">
                             <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
@@ -936,6 +1009,12 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // Format tags highlighting in text
+        function formatTags(text) {
+            if (!text) return '';
+            return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
         }
 
         function renderCardHtml(s, showControls = false) {
@@ -950,9 +1029,13 @@
             const reviews = s.reviews || [];
             const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
             
+            const contactStatuses = getContactStatuses();
+            const myNoteStatus = contactStatuses[s.id];
+
             return `
                 <div onclick="openDetailModal('${s.id}')" class="bg-tg-card rounded-2xl overflow-hidden border border-white/5 shadow-sm cursor-pointer hover:border-tg-accent/30 transition-all active:scale-[0.99] relative">
                     ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                    ${myNoteStatus ? `<div class="absolute top-3 right-3 z-10 bg-emerald-500/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md"><i class="fa-solid fa-check mr-1"></i>${myNoteStatus}</div>` : ''}
                     ${s.imageUrl ? `<div class="h-44 w-full bg-cover bg-center ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : ''}
                     <div class="p-4 space-y-3">
                         <div class="flex items-start justify-between">
@@ -964,13 +1047,13 @@
                                 <h3 class="font-bold text-base mt-1.5">${s.name}</h3>
                             </div>
                             <div class="text-right flex-shrink-0 ml-2">
-                                <div class="text-sm font-bold text-tg-text">${s.price}</div>
+                                <div class="text-sm font-bold text-tg-text">${s.price || 'Договорная'}</div>
                                 ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-bolt mr-1"></i>${s.friendPrice}</div>` : ''}
                             </div>
                         </div>
-                        <p class="text-xs text-tg-hint leading-relaxed line-clamp-2">${displayShortDesc}</p>
+                        <p class="text-xs text-tg-hint leading-relaxed line-clamp-2">${formatTags(displayShortDesc)}</p>
                         <div class="flex items-center justify-between pt-2 border-t border-white/5" onclick="event.stopPropagation()">
-                            <div class="flex items-center space-x-2 min-w-0 pr-2">
+                            <div onclick="openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}')" class="flex items-center space-x-2 min-w-0 pr-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
                                     ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
                                 </div>
@@ -1003,6 +1086,62 @@
             `;
         }
 
+        // Seller Profile Modal
+        window.openSellerModal = function(username, name, avatar) {
+            const container = document.getElementById('sellerContent');
+            const authorServices = allServices.filter(s => (s.authorUsername || '').toLowerCase() === (username || '').toLowerCase());
+            
+            // Calculate Author Average Rating
+            let allAuthorReviews = [];
+            authorServices.forEach(s => { if (s.reviews) allAuthorReviews.push(...s.reviews); });
+            const avgRating = allAuthorReviews.length > 0 ? (allAuthorReviews.reduce((acc, r) => acc + r.rating, 0) / allAuthorReviews.length).toFixed(1) : '—';
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between pb-3 border-b border-white/5">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-full bg-tg-button flex items-center justify-center font-bold text-lg text-tg-buttonText overflow-hidden">
+                            ${avatar ? `<img src="${avatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-base text-tg-text">${name || username}</h3>
+                            <p class="text-xs text-tg-hint">@${username}</p>
+                        </div>
+                    </div>
+                    <button onclick="closeSellerModal()" class="w-8 h-8 rounded-full bg-tg-card flex items-center justify-center text-tg-hint hover:text-tg-text">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-center py-2">
+                    <div class="bg-tg-card p-2.5 rounded-xl border border-white/5">
+                        <div class="text-[10px] text-tg-hint">Всего объявлений</div>
+                        <div class="text-base font-bold text-tg-accent">${authorServices.length}</div>
+                    </div>
+                    <div class="bg-tg-card p-2.5 rounded-xl border border-white/5">
+                        <div class="text-[10px] text-tg-hint">Рейтинг автора</div>
+                        <div class="text-base font-bold text-amber-400"><i class="fa-solid fa-star text-xs mr-1"></i>${avgRating}</div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-tg-hint">Объявления продавца</h4>
+                    <div class="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                        ${authorServices.map(s => renderCardHtml(s)).join('')}
+                    </div>
+                </div>
+
+                <a href="https://t.me/${username}" target="_blank" class="w-full bg-tg-button text-tg-buttonText font-medium py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg shadow-tg-button/20">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Написать продавцу в Telegram</span>
+                </a>
+            `;
+            document.getElementById('sellerModal').classList.remove('hidden');
+        };
+
+        window.closeSellerModal = function() {
+            document.getElementById('sellerModal').classList.add('hidden');
+        };
+
         window.openDetailModal = function(id) {
             const s = allServices.find(item => item.id === id);
             if (!s) return;
@@ -1019,6 +1158,9 @@
             const reviews = s.reviews || [];
             const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) : null;
 
+            const contactStatuses = getContactStatuses();
+            const currentContactStatus = contactStatuses[s.id];
+
             container.innerHTML = `
                 <div class="relative">
                     ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
@@ -1034,13 +1176,26 @@
                             <h2 class="font-bold text-xl mt-2 text-tg-text">${s.name}</h2>
                         </div>
                         <div class="text-right flex-shrink-0 ml-2">
-                            <div class="text-lg font-bold text-tg-text">${s.price}</div>
+                            <div class="text-lg font-bold text-tg-text">${s.price || 'Договорная'}</div>
                             ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400"><i class="fa-solid fa-bolt mr-1"></i>${s.friendPrice}</div>` : ''}
                         </div>
                     </div>
 
+                    <!-- Personal Order Contact Note Status -->
+                    <div class="bg-tg-card p-3 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+                        <span class="text-tg-hint">Статус взаимодействия:</span>
+                        <div class="flex space-x-1.5">
+                            <button onclick="toggleContactStatus('${s.id}', 'Написал продавцу')" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Написал продавцу' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
+                                Написал
+                            </button>
+                            <button onclick="toggleContactStatus('${s.id}', 'Договорились')" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Договорились' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
+                                Договорились
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="bg-tg-card p-3.5 rounded-xl flex items-center justify-between border border-white/5">
-                        <div class="flex items-center space-x-2.5">
+                        <div onclick="closeDetailModal(); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}');" class="flex items-center space-x-2.5 cursor-pointer hover:opacity-80 transition-opacity">
                             <div class="w-8 h-8 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center font-bold overflow-hidden">
                                 ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
                             </div>
@@ -1062,7 +1217,7 @@
 
                     <div class="space-y-1.5">
                         <h4 class="text-xs font-bold uppercase tracking-wider text-tg-hint">Полное описание</h4>
-                        <p class="text-sm text-tg-text leading-relaxed whitespace-pre-wrap">${fullDesc}</p>
+                        <p class="text-sm text-tg-text leading-relaxed whitespace-pre-wrap">${formatTags(fullDesc)}</p>
                     </div>
 
                     <!-- Reviews & Rating Section -->
@@ -1166,7 +1321,6 @@
         window.openEditModal = function(id) {
             const s = allServices.find(item => item.id === id);
             if (!s) return;
-            // Security check: only author or admin can edit
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
             if (!isOwner && !isAdmin) {
                 alert("У вас нет прав на редактирование этого объявления.");
@@ -1178,7 +1332,7 @@
             document.getElementById('serviceName').value = s.name;
             document.getElementById('serviceCategory').value = s.category;
             document.getElementById('serviceStatus').value = s.status || "active";
-            document.getElementById('servicePrice').value = s.price;
+            document.getElementById('servicePrice').value = s.price || "";
             document.getElementById('serviceFriendPrice').value = s.friendPrice || "";
             document.getElementById('serviceShortDesc').value = s.shortDesc || s.desc || "";
             document.getElementById('serviceDesc').value = s.desc || "";
@@ -1255,11 +1409,13 @@
                 }
             }
 
+            const rawPrice = document.getElementById('servicePrice').value.trim();
+
             const data = {
                 name: document.getElementById('serviceName').value.trim(),
                 category: document.getElementById('serviceCategory').value,
                 status: document.getElementById('serviceStatus').value,
-                price: document.getElementById('servicePrice').value.trim(),
+                price: rawPrice || "Договорная",
                 friendPrice: document.getElementById('serviceFriendPrice').value.trim(),
                 shortDesc: document.getElementById('serviceShortDesc').value.trim(),
                 desc: document.getElementById('serviceDesc').value.trim(),
