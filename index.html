@@ -104,7 +104,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-tg-hint">Скидка для участников</div>
-                    <div class="text-emerald-400 font-bold">до −99%</div>
+                    <div class="text-emerald-400 font-bold">до −20%</div>
                 </div>
             </div>
 
@@ -117,7 +117,7 @@
             </div>
         </section>
 
-        <!-- Tab 2: Profile (Combined Profile & My Services) -->
+        <!-- Tab 2: Profile -->
         <section id="tabProfile" class="space-y-4 hidden">
             <!-- User Header Card -->
             <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
@@ -184,7 +184,7 @@
                     </div>
                     <div>
                         <h2 class="font-bold text-base text-red-400">Панель администратора</h2>
-                        <p class="text-xs text-tg-hint">Статистика, приглашения и управление</p>
+                        <p class="text-xs text-tg-hint">Статистика, период, модерация и рассылки</p>
                     </div>
                 </div>
             </div>
@@ -221,6 +221,24 @@
                 </div>
             </div>
 
+            <!-- Detailed Visual Analytics Chart with Timeframe Selector -->
+            <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-tg-accent"></i>
+                        <span>Динамика активности</span>
+                    </h3>
+                    <div class="flex space-x-1 bg-tg-bg p-1 rounded-xl border border-white/5 text-[10px]">
+                        <button onclick="changeChartTimeframe('day')" id="timeframeDay" class="px-2 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors">День</button>
+                        <button onclick="changeChartTimeframe('week')" id="timeframeWeek" class="px-2 py-1 rounded-lg bg-tg-button text-tg-buttonText font-medium transition-colors">Неделя</button>
+                        <button onclick="changeChartTimeframe('month')" id="timeframeMonth" class="px-2 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors">Месяц</button>
+                    </div>
+                </div>
+                <div class="h-48 w-full">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+
             <!-- Referral Leaderboard in Admin -->
             <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
                 <h3 class="font-bold text-sm text-tg-text flex items-center justify-between">
@@ -231,17 +249,6 @@
                 </h3>
                 <div id="adminRefLeadersList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
                     <!-- Populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Visual Analytics Chart (Chart.js) -->
-            <div class="bg-tg-card rounded-2xl p-4 border border-white/5 space-y-3">
-                <h3 class="font-bold text-sm text-tg-text flex items-center space-x-2">
-                    <i class="fa-solid fa-chart-line text-tg-accent"></i>
-                    <span>Динамика активности</span>
-                </h3>
-                <div class="h-48 w-full">
-                    <canvas id="activityChart"></canvas>
                 </div>
             </div>
 
@@ -460,7 +467,7 @@
             document.getElementById('profileBigAvatar').innerHTML = `<img src="${currentUser.photo_url}" class="w-full h-full object-cover">`;
         }
 
-        // Referral Link Construction
+        // Clean Referral Link Construction
         const userRefCode = currentUser.username || currentUser.id;
         const myReferralLink = `https://t.me/${BOT_USERNAME}?start=ref_${userRefCode}`;
         document.getElementById('referralLinkInput').value = myReferralLink;
@@ -475,8 +482,21 @@
         };
 
         window.shareReferralLink = function() {
-            const text = encodeURIComponent(`Присоединяйся к нашему закрытому маркетплейсу услуг и товаров "Для своих"! 🚀`);
+            const text = encodeURIComponent(`Присоединяйся к нашему закрытому маркетплейсу услуг и товаров "Для своих"! 🚀\n${myReferralLink}`);
             const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(myReferralLink)}&text=${text}`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(shareUrl);
+            } else {
+                window.open(shareUrl, '_blank');
+            }
+        };
+
+        // Clean Share URL helper (Strikes out ugly Telegram web app hash/query params)
+        window.shareService = function(id, name, event) {
+            if (event) event.stopPropagation();
+            const cleanBaseUrl = window.location.origin + window.location.pathname;
+            const text = encodeURIComponent(`Посмотри объявление «${name}» в нашем закрытом клубе услуг!`);
+            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(cleanBaseUrl)}&text=${text}`;
             if (tg && tg.openTelegramLink) {
                 tg.openTelegramLink(shareUrl);
             } else {
@@ -505,17 +525,6 @@
             renderMyServices();
         };
 
-        window.shareService = function(id, name, event) {
-            if (event) event.stopPropagation();
-            const text = encodeURIComponent(`Посмотри объявление «${name}» в нашем закрытом клубе услуг!`);
-            const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`;
-            if (tg && tg.openTelegramLink) {
-                tg.openTelegramLink(shareUrl);
-            } else {
-                window.open(shareUrl, '_blank');
-            }
-        };
-
         async function registerUserPresenceAndLaunch() {
             if (!isFirebaseConnected || !db || !currentUser) return;
             try {
@@ -542,6 +551,7 @@
         let currentCategory = 'all';
         let adminFilterStatus = 'all';
         let activityChart = null;
+        let currentChartTimeframe = 'week';
 
         function initRealtimeSync() {
             if (!isFirebaseConnected || !db) {
@@ -588,13 +598,37 @@
             });
         }
 
+        window.changeChartTimeframe = function(timeframe) {
+            currentChartTimeframe = timeframe;
+            ['day', 'week', 'month'].forEach(tf => {
+                const btn = document.getElementById(`timeframe${tf.charAt(0).toUpperCase() + tf.slice(1)}`);
+                if (btn) {
+                    btn.className = tf === timeframe ? "px-2 py-1 rounded-lg bg-tg-button text-tg-buttonText font-medium transition-colors" : "px-2 py-1 rounded-lg text-tg-hint hover:text-tg-text transition-colors";
+                }
+            });
+            renderActivityChart();
+        };
+
         function renderActivityChart() {
             const ctx = document.getElementById('activityChart');
             if (!ctx) return;
 
-            const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-            const launchesData = [12, 19, 15, 22, 30, globalStats.totalLaunches || 35, (globalStats.totalLaunches || 35) + 5];
-            const viewsData = [25, 38, 42, 50, 65, 80, 95];
+            let labels, launchesData, viewsData;
+
+            if (currentChartTimeframe === 'day') {
+                labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'];
+                launchesData = [2, 1, 5, 12, 18, 14, 8];
+                viewsData = [5, 2, 14, 30, 45, 38, 20];
+            } else if (currentChartTimeframe === 'month') {
+                labels = ['Неделя 1', 'Неделя 2', 'Неделя 3', 'Неделя 4'];
+                launchesData = [45, 60, 75, globalStats.totalLaunches || 90];
+                viewsData = [120, 180, 240, 310];
+            } else {
+                // week
+                labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                launchesData = [12, 19, 15, 22, 30, globalStats.totalLaunches || 35, (globalStats.totalLaunches || 35) + 5];
+                viewsData = [25, 38, 42, 50, 65, 80, 95];
+            }
 
             if (activityChart) activityChart.destroy();
 
@@ -782,6 +816,9 @@
         }
 
         function renderAdminPanel() {
+            // Security check: only admin can view
+            if (!isAdmin) return;
+
             const authorsMap = {};
             let totalViews = 0;
             let totalRefInvites = 0;
@@ -1129,6 +1166,13 @@
         window.openEditModal = function(id) {
             const s = allServices.find(item => item.id === id);
             if (!s) return;
+            // Security check: only author or admin can edit
+            const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+            if (!isOwner && !isAdmin) {
+                alert("У вас нет прав на редактирование этого объявления.");
+                return;
+            }
+
             document.getElementById('modalTitle').textContent = "Редактировать объявление";
             document.getElementById('editServiceId').value = s.id;
             document.getElementById('serviceName').value = s.name;
@@ -1190,6 +1234,7 @@
             reader.readAsDataURL(file);
         };
 
+        // Security Validation & Saving
         window.saveService = async function(e) {
             e.preventDefault();
             
@@ -1200,15 +1245,25 @@
             const id = document.getElementById('editServiceId').value;
             const existingService = id ? allServices.find(item => item.id === id) : null;
 
+            if (id && existingService) {
+                const isOwner = String(existingService.authorId) === String(currentUser.id) || (currentUser.username && existingService.authorUsername && existingService.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+                if (!isOwner && !isAdmin) {
+                    alert("Ошибка безопасности: редактирование чужого объявления запрещено.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Опубликовать</span>`;
+                    return;
+                }
+            }
+
             const data = {
-                name: document.getElementById('serviceName').value,
+                name: document.getElementById('serviceName').value.trim(),
                 category: document.getElementById('serviceCategory').value,
                 status: document.getElementById('serviceStatus').value,
-                price: document.getElementById('servicePrice').value,
-                friendPrice: document.getElementById('serviceFriendPrice').value,
-                shortDesc: document.getElementById('serviceShortDesc').value,
-                desc: document.getElementById('serviceDesc').value,
-                imageUrl: document.getElementById('serviceImage').value,
+                price: document.getElementById('servicePrice').value.trim(),
+                friendPrice: document.getElementById('serviceFriendPrice').value.trim(),
+                shortDesc: document.getElementById('serviceShortDesc').value.trim(),
+                desc: document.getElementById('serviceDesc').value.trim(),
+                imageUrl: document.getElementById('serviceImage').value.trim(),
                 authorId: existingService ? existingService.authorId : currentUser.id,
                 authorName: existingService ? existingService.authorName : currentUser.first_name,
                 authorUsername: existingService ? existingService.authorUsername : (currentUser.username || 'user'),
@@ -1235,6 +1290,14 @@
         };
 
         window.deleteService = async function(id) {
+            const s = allServices.find(item => item.id === id);
+            if (!s) return;
+            const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+            if (!isOwner && !isAdmin) {
+                alert("У вас нет прав на удаление этого объявления.");
+                return;
+            }
+
             if (!confirm("Вы действительно хотите удалить это объявление?")) return;
             try {
                 await deleteDoc(doc(db, "services", id));
