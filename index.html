@@ -90,14 +90,15 @@
                     <input type="number" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до (руб.)" class="bg-tg-card text-tg-text px-3 py-1.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
 
-                <!-- Fast UX Tags -->
+                <!-- Fast UX Tags (Обновленный список) -->
                 <div class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5 text-[11px]">
-                    <button onclick="setSearchTag('#снаряжение')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#снаряжение</button>
-                    <button onclick="setSearchTag('#дайвинг')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#дайвинг</button>
-                    <button onclick="setSearchTag('#подводнаяохота')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#подводнаяохота</button>
-                    <button onclick="setSearchTag('#обучение')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#обучение</button>
                     <button onclick="setSearchTag('#аренда')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#аренда</button>
+                    <button onclick="setSearchTag('#юрист')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#юрист</button>
                     <button onclick="setSearchTag('#ремонт')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#ремонт</button>
+                    <button onclick="setSearchTag('#фото')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#фото</button>
+                    <button onclick="setSearchTag('#машина')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#машина</button>
+                    <button onclick="setSearchTag('#продажа')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#продажа</button>
+                    <button onclick="setSearchTag('#обучение')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#обучение</button>
                 </div>
                 
                 <!-- Categories -->
@@ -112,7 +113,7 @@
                 </div>
             </div>
 
-            <!-- Stats Bar (Updated Text: Скидка для участников до -99%) -->
+            <!-- Stats Bar -->
             <div class="bg-tg-card rounded-2xl p-3.5 flex items-center justify-between border border-white/5 text-xs">
                 <div class="flex items-center space-x-2">
                     <div class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center">
@@ -371,7 +372,7 @@
                 <input type="hidden" id="editServiceId">
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Название услуги или товара</label>
-                    <input type="text" id="serviceName" required placeholder="Например: Ремонт телефона / Аренда квартиры #ремонт" 
+                    <input type="text" id="serviceName" required placeholder="Например: Ремонт телефонов / Консультация юриста" 
                         class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -406,6 +407,27 @@
                         <p class="text-[10px] text-tg-hint mt-1">Подсказка: можно указать стоимость (1000 руб.) или размер скидки (Скидка 15%)</p>
                     </div>
                 </div>
+
+                <!-- Хэштеги с быстрыми кнопками выборки -->
+                <div>
+                    <label class="block text-xs text-tg-hint mb-1">Хэштеги (необязательно)</label>
+                    <input type="text" id="serviceTags" placeholder="например: аренда, юрист, ремонт, фото" 
+                        class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent">
+                    <p class="text-[10px] text-tg-hint mt-1">Укажите теги через запятую или пробел. Они помогут быстрее найти ваше объявление.</p>
+                    
+                    <!-- Быстрый выбор рекомендаций -->
+                    <div class="flex flex-wrap gap-1.5 mt-2">
+                        <span class="text-[10px] text-tg-hint flex items-center mr-1">Быстрый выбор:</span>
+                        <button type="button" onclick="appendTagPreset('аренда')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Аренда</button>
+                        <button type="button" onclick="appendTagPreset('юрист')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Юрист</button>
+                        <button type="button" onclick="appendTagPreset('ремонт')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Ремонт</button>
+                        <button type="button" onclick="appendTagPreset('фото')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Фото</button>
+                        <button type="button" onclick="appendTagPreset('машина')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Машина</button>
+                        <button type="button" onclick="appendTagPreset('продажа')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Продажа</button>
+                        <button type="button" onclick="appendTagPreset('обучение')" class="text-[10px] bg-tg-card/80 text-tg-accent px-2 py-0.5 rounded-md border border-white/5 hover:bg-tg-card transition-colors">+Обучение</button>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Краткое описание (отображается в каталоге)</label>
                     <input type="text" id="serviceShortDesc" required placeholder="Короткий анонс в 1-2 предложения..." 
@@ -413,7 +435,7 @@
                 </div>
                 <div>
                     <label class="block text-xs text-tg-hint mb-1">Полное описание (отображается при открытии)</label>
-                    <textarea id="serviceDesc" rows="4" required placeholder="Подробно опишите условия, характеристики, варианты оплаты и теги..." 
+                    <textarea id="serviceDesc" rows="4" required placeholder="Подробно опишите условия, характеристики, варианты оплаты..." 
                         class="w-full bg-tg-card text-tg-text px-3.5 py-2.5 rounded-xl text-sm border border-white/5 focus:outline-none focus:border-tg-accent resize-none"></textarea>
                 </div>
                 <div>
@@ -585,6 +607,20 @@
             localStorage.setItem('sublife_favorites', JSON.stringify(favs));
             renderCatalog();
             renderMyServices();
+        };
+
+        window.appendTagPreset = function(tagName) {
+            const input = document.getElementById('serviceTags');
+            let currentVal = input.value.trim();
+            if (!currentVal) {
+                input.value = tagName;
+            } else {
+                const tagsArr = currentVal.split(/[, \s]+/).filter(Boolean);
+                if (!tagsArr.includes(tagName)) {
+                    tagsArr.push(tagName);
+                    input.value = tagsArr.join(', ');
+                }
+            }
         };
 
         async function registerUserPresenceAndLaunch() {
@@ -842,7 +878,9 @@
 
                 const shortText = (s.shortDesc || s.desc || '').toLowerCase();
                 const fullText = (s.desc || '').toLowerCase();
-                return s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
+                const tagsText = (s.tags || []).join(' ').toLowerCase();
+
+                return s.name.toLowerCase().includes(queryText) || shortText.includes(queryText) || fullText.includes(queryText) || tagsText.includes(queryText) || (s.authorName || '').toLowerCase().includes(queryText);
             });
 
             filtered.sort((a, b) => {
@@ -1052,6 +1090,13 @@
                             </div>
                         </div>
                         <p class="text-xs text-tg-hint leading-relaxed line-clamp-2">${formatTags(displayShortDesc)}</p>
+                        
+                        ${s.tags && s.tags.length > 0 ? `
+                            <div class="flex flex-wrap gap-1 pt-1">
+                                ${s.tags.map(t => `<span onclick="event.stopPropagation(); setSearchTag('${t}')" class="text-[10px] bg-tg-bg text-tg-accent px-2 py-0.5 rounded-md hover:underline">${t}</span>`).join('')}
+                            </div>
+                        ` : ''}
+
                         <div class="flex items-center justify-between pt-2 border-t border-white/5" onclick="event.stopPropagation()">
                             <div onclick="openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}')" class="flex items-center space-x-2 min-w-0 pr-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
@@ -1220,6 +1265,12 @@
                         <p class="text-sm text-tg-text leading-relaxed whitespace-pre-wrap">${formatTags(fullDesc)}</p>
                     </div>
 
+                    ${s.tags && s.tags.length > 0 ? `
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                            ${s.tags.map(t => `<span onclick="closeDetailModal(); setSearchTag('${t}')" class="text-xs bg-tg-card text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 cursor-pointer hover:underline">${t}</span>`).join('')}
+                        </div>
+                    ` : ''}
+
                     <!-- Reviews & Rating Section -->
                     <div class="space-y-3 pt-2 border-t border-white/5">
                         <div class="flex items-center justify-between">
@@ -1314,6 +1365,7 @@
             document.getElementById('editServiceId').value = "";
             document.getElementById('serviceStatus').value = "active";
             document.getElementById('uploadStatus').textContent = "Выбрать фото с устройства";
+            document.getElementById('serviceTags').value = "";
             document.getElementById('serviceForm').reset();
             document.getElementById('serviceModal').classList.remove('hidden');
         };
@@ -1337,6 +1389,7 @@
             document.getElementById('serviceShortDesc').value = s.shortDesc || s.desc || "";
             document.getElementById('serviceDesc').value = s.desc || "";
             document.getElementById('serviceImage').value = s.imageUrl || "";
+            document.getElementById('serviceTags').value = s.tags ? s.tags.map(t => t.replace('#', '')).join(', ') : "";
             document.getElementById('uploadStatus').textContent = s.imageUrl ? "Фото загружено" : "Выбрать фото с устройства";
             document.getElementById('serviceModal').classList.remove('hidden');
         };
@@ -1410,6 +1463,15 @@
             }
 
             const rawPrice = document.getElementById('servicePrice').value.trim();
+            const rawTags = document.getElementById('serviceTags').value.trim();
+            
+            // Format Tags Array
+            let parsedTags = [];
+            if (rawTags) {
+                parsedTags = rawTags.split(/[, \s]+/)
+                    .filter(Boolean)
+                    .map(t => t.startsWith('#') ? t.toLowerCase() : `#${t.toLowerCase()}`);
+            }
 
             const data = {
                 name: document.getElementById('serviceName').value.trim(),
@@ -1419,6 +1481,7 @@
                 friendPrice: document.getElementById('serviceFriendPrice').value.trim(),
                 shortDesc: document.getElementById('serviceShortDesc').value.trim(),
                 desc: document.getElementById('serviceDesc').value.trim(),
+                tags: parsedTags,
                 imageUrl: document.getElementById('serviceImage').value.trim(),
                 authorId: existingService ? existingService.authorId : currentUser.id,
                 authorName: existingService ? existingService.authorName : currentUser.first_name,
