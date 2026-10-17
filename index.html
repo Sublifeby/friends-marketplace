@@ -747,6 +747,13 @@
                 renderCatalog();
                 renderMyServices();
                 if (isAdmin) renderAdminPanel();
+
+                // Refresh Detail Modal if open
+                const detailModal = document.getElementById('detailModal');
+                if (detailModal && !detailModal.classList.contains('hidden')) {
+                    const openServiceId = detailModal.getAttribute('data-open-id');
+                    if (openServiceId) openDetailModal(openServiceId, false);
+                }
             });
 
             const qUsers = collection(db, "app_users");
@@ -880,7 +887,7 @@
                 });
 
                 await updateDoc(serviceRef, { reviews });
-                openDetailModal(serviceId);
+                openDetailModal(serviceId, false);
             } catch (err) {
                 console.error("Error adding review:", err);
                 alert("Ошибка добавления отзыва");
@@ -1116,7 +1123,9 @@
                             <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured})" title="Закрепить как VIP" class="w-8 h-8 rounded-xl ${isFeatured ? 'bg-amber-400 text-black font-bold' : 'bg-tg-bg text-tg-hint hover:text-amber-400'} flex items-center justify-center text-xs transition-colors">
                                 <i class="fa-solid fa-star"></i>
                             </button>
-                            <button onclick="openEditModal('${s.id}')" class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="openEditModal('${s.id}')" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
                             <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
@@ -1265,11 +1274,12 @@
             updateBackButtonVisibility();
         };
 
-        window.openDetailModal = function(id) {
-            pushHistoryState();
+        window.openDetailModal = function(id, pushState = true) {
+            if (pushState) pushHistoryState();
             const s = allServices.find(item => item.id === id);
             if (!s) return;
 
+            document.getElementById('detailModal').setAttribute('data-open-id', id);
             trackServiceClick(id);
 
             const container = document.getElementById('detailContent');
@@ -1325,28 +1335,32 @@
                     </div>
 
                     <div class="bg-tg-card p-3.5 rounded-xl flex items-center justify-between border border-white/5">
-                        <div onclick="closeDetailModal(); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}');" class="flex items-center space-x-2.5 cursor-pointer hover:opacity-80 transition-opacity">
-                            <div class="w-8 h-8 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center font-bold overflow-hidden">
+                        <div onclick="closeDetailModal(); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}');" class="flex items-center space-x-2.5 cursor-pointer hover:opacity-80 transition-opacity min-w-0 pr-2">
+                            <div class="w-8 h-8 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center font-bold overflow-hidden flex-shrink-0">
                                 ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
                             </div>
-                            <div>
-                                <div class="text-xs font-bold text-tg-text">@${s.authorUsername || 'friend'}</div>
-                                <div class="text-[10px] text-tg-hint">${s.authorName || 'Участник клуба'}</div>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-tg-text truncate">@${s.authorUsername || 'friend'}</div>
+                                <div class="text-[10px] text-tg-hint truncate">${s.authorName || 'Участник клуба'}</div>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            ${canEdit ? `
-                                <button onclick="closeDetailModal(); openEditModal('${s.id}')" class="p-2 rounded-xl bg-tg-accent/20 text-tg-accent hover:bg-tg-accent hover:text-white text-xs font-medium transition-colors flex items-center space-x-1">
-                                    <i class="fa-solid fa-pen"></i>
-                                    <span class="text-[11px]">Редактировать</span>
+                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                            ${isAdmin ? `
+                                <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured})" title="${isFeatured ? 'Открепить VIP' : 'Закрепить как VIP'}" class="px-2.5 py-1 rounded-xl font-extrabold text-[11px] flex items-center space-x-1 shadow-md transition-all active:scale-95 ${isFeatured ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black border border-amber-300' : 'bg-tg-bg text-amber-400 border border-amber-400/30 hover:bg-amber-400/10'}">
+                                    <i class="fa-solid fa-crown text-[10px]"></i>
+                                    <span>${isFeatured ? 'VIP (Закреплено)' : 'Сделать VIP'}</span>
                                 </button>
                             ` : ''}
-                            <button onclick="shareService('${s.id}', '${s.name}', event)" class="p-2 rounded-xl bg-tg-bg text-xs font-medium text-tg-text border border-white/5">
+                            ${canEdit ? `
+                                <button onclick="closeDetailModal(); openEditModal('${s.id}')" title="Редактировать объявление" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                            ` : ''}
+                            <button onclick="shareService('${s.id}', '${s.name}', event)" class="w-8 h-8 rounded-xl bg-tg-bg text-tg-hint hover:text-tg-accent flex items-center justify-center text-xs transition-colors">
                                 <i class="fa-solid fa-share-nodes"></i>
                             </button>
-                            <button onclick="toggleFavorite('${s.id}', event); openDetailModal('${s.id}');" class="px-3 py-1.5 rounded-xl bg-tg-bg text-xs font-medium text-tg-text flex items-center space-x-1.5 border border-white/5">
+                            <button onclick="toggleFavorite('${s.id}', event); openDetailModal('${s.id}', false);" class="w-8 h-8 rounded-xl bg-tg-bg text-tg-hint hover:text-amber-400 flex items-center justify-center text-xs transition-colors">
                                 <i class="${isFav ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star'}"></i>
-                                <span>${isFav ? 'В избранном' : 'В избранное'}</span>
                             </button>
                         </div>
                     </div>
@@ -1412,7 +1426,9 @@
         };
 
         window.closeDetailModal = function() {
-            document.getElementById('detailModal').classList.add('hidden');
+            const detailModal = document.getElementById('detailModal');
+            detailModal.classList.add('hidden');
+            detailModal.removeAttribute('data-open-id');
             updateBackButtonVisibility();
         };
 
