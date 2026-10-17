@@ -90,7 +90,7 @@
                     <input type="number" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до (руб.)" class="bg-tg-card text-tg-text px-3 py-1.5 rounded-xl text-xs border border-white/5 focus:outline-none focus:border-tg-accent">
                 </div>
 
-                <!-- Fast UX Tags (Обновленный список) -->
+                <!-- Fast UX Tags -->
                 <div class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5 text-[11px]">
                     <button onclick="setSearchTag('#аренда')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#аренда</button>
                     <button onclick="setSearchTag('#юрист')" class="bg-tg-card/70 text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 hover:bg-tg-card transition-colors">#юрист</button>
@@ -343,7 +343,7 @@
 
     <!-- Seller Profile Modal -->
     <div id="sellerModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 p-5">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 p-5 relative">
             <div id="sellerContent">
                 <!-- Dynamically populated -->
             </div>
@@ -352,7 +352,7 @@
 
     <!-- Service Detail View Modal -->
     <div id="detailModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6 relative">
             <div id="detailContent">
                 <!-- Dynamically populated -->
             </div>
@@ -361,7 +361,7 @@
 
     <!-- Create / Edit Modal -->
     <div id="serviceModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 border border-white/10 max-h-[90vh] overflow-y-auto space-y-4">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 relative">
             <div class="flex items-center justify-between pb-2 border-b border-white/5">
                 <h3 id="modalTitle" class="font-bold text-base">Новое объявление</h3>
                 <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-tg-card flex items-center justify-center text-tg-hint hover:text-tg-text">
@@ -541,6 +541,57 @@
         const userRefCode = currentUser.username || currentUser.id;
         const myReferralLink = `https://t.me/${BOT_USERNAME}?start=ref_${userRefCode}`;
         document.getElementById('referralLinkInput').value = myReferralLink;
+
+        // Navigation History Stack for Back Button
+        let activeTab = 'catalog';
+
+        function updateBackButtonVisibility() {
+            const isDetailOpen = !document.getElementById('detailModal').classList.contains('hidden');
+            const isSellerOpen = !document.getElementById('sellerModal').classList.contains('hidden');
+            const isServiceModalOpen = !document.getElementById('serviceModal').classList.contains('hidden');
+
+            const hasActiveOverlay = isDetailOpen || isSellerOpen || isServiceModalOpen || activeTab !== 'catalog';
+
+            if (tg && tg.BackButton) {
+                if (hasActiveOverlay) {
+                    tg.BackButton.show();
+                } else {
+                    tg.BackButton.hide();
+                }
+            }
+        }
+
+        function handleBackNavigation() {
+            const isDetailOpen = !document.getElementById('detailModal').classList.contains('hidden');
+            const isSellerOpen = !document.getElementById('sellerModal').classList.contains('hidden');
+            const isServiceModalOpen = !document.getElementById('serviceModal').classList.contains('hidden');
+
+            if (isDetailOpen) {
+                closeDetailModal();
+            } else if (isSellerOpen) {
+                closeSellerModal();
+            } else if (isServiceModalOpen) {
+                closeModal();
+            } else if (activeTab !== 'catalog') {
+                switchTab('catalog');
+            } else {
+                if (tg && tg.close) tg.close();
+            }
+        }
+
+        if (tg && tg.BackButton) {
+            tg.BackButton.onClick(handleBackNavigation);
+        }
+
+        // Handle Browser History Back Action (Hardware back button on phones)
+        window.addEventListener('popstate', (e) => {
+            handleBackNavigation();
+        });
+
+        function pushHistoryState() {
+            window.history.pushState({ overlay: true }, '');
+            updateBackButtonVisibility();
+        }
 
         window.copyReferralLink = function() {
             const input = document.getElementById('referralLinkInput');
@@ -1133,6 +1184,7 @@
 
         // Seller Profile Modal
         window.openSellerModal = function(username, name, avatar) {
+            pushHistoryState();
             const container = document.getElementById('sellerContent');
             const authorServices = allServices.filter(s => (s.authorUsername || '').toLowerCase() === (username || '').toLowerCase());
             
@@ -1142,19 +1194,18 @@
             const avgRating = allAuthorReviews.length > 0 ? (allAuthorReviews.reduce((acc, r) => acc + r.rating, 0) / allAuthorReviews.length).toFixed(1) : '—';
 
             container.innerHTML = `
-                <div class="flex items-center justify-between pb-3 border-b border-white/5">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 rounded-full bg-tg-button flex items-center justify-center font-bold text-lg text-tg-buttonText overflow-hidden">
-                            ${avatar ? `<img src="${avatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-base text-tg-text">${name || username}</h3>
-                            <p class="text-xs text-tg-hint">@${username}</p>
-                        </div>
+                <!-- Sticky Floating Close Button -->
+                <button onclick="closeSellerModal()" class="sticky top-0 float-right z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="flex items-center space-x-3 pb-3 border-b border-white/5">
+                    <div class="w-12 h-12 rounded-full bg-tg-button flex items-center justify-center font-bold text-lg text-tg-buttonText overflow-hidden">
+                        ${avatar ? `<img src="${avatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
                     </div>
-                    <button onclick="closeSellerModal()" class="w-8 h-8 rounded-full bg-tg-card flex items-center justify-center text-tg-hint hover:text-tg-text">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
+                    <div>
+                        <h3 class="font-bold text-base text-tg-text">${name || username}</h3>
+                        <p class="text-xs text-tg-hint">@${username}</p>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 text-center py-2">
@@ -1185,9 +1236,11 @@
 
         window.closeSellerModal = function() {
             document.getElementById('sellerModal').classList.add('hidden');
+            updateBackButtonVisibility();
         };
 
         window.openDetailModal = function(id) {
+            pushHistoryState();
             const s = allServices.find(item => item.id === id);
             if (!s) return;
 
@@ -1208,11 +1261,12 @@
 
             container.innerHTML = `
                 <div class="relative">
-                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
-                    ${s.imageUrl ? `<div class="h-60 w-full bg-cover bg-center rounded-t-3xl sm:rounded-t-2xl ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : '<div class="h-12"></div>'}
-                    <button onclick="closeDetailModal()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20">
+                    <!-- Sticky Floating Close Button -->
+                    <button onclick="closeDetailModal()" class="sticky top-3 float-right mr-3 z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
+                    ${isArchived ? '<div class="absolute top-3 left-3 z-10 bg-black/70 backdrop-blur-md text-red-400 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-red-500/30">Продано / Неактуально</div>' : ''}
+                    ${s.imageUrl ? `<div class="h-60 w-full bg-cover bg-center rounded-t-3xl sm:rounded-t-2xl ${isArchived ? 'opacity-60' : ''}" style="background-image: url('${s.imageUrl}')"></div>` : '<div class="h-8"></div>'}
                 </div>
                 <div class="p-5 space-y-4">
                     <div class="flex items-start justify-between">
@@ -1322,6 +1376,7 @@
 
         window.closeDetailModal = function() {
             document.getElementById('detailModal').classList.add('hidden');
+            updateBackButtonVisibility();
         };
 
         window.trackServiceClick = async function(id) {
@@ -1340,6 +1395,7 @@
         }
 
         window.switchTab = function(tab) {
+            activeTab = tab;
             document.getElementById('tabCatalog').classList.add('hidden');
             document.getElementById('tabProfile').classList.add('hidden');
             document.getElementById('tabAdmin').classList.add('hidden');
@@ -1358,9 +1414,11 @@
                 document.getElementById('tabAdmin').classList.remove('hidden');
                 document.getElementById('navAdmin').className = "flex flex-col items-center space-y-1 text-tg-accent transition-colors";
             }
+            updateBackButtonVisibility();
         };
 
         window.openAddModal = function() {
+            pushHistoryState();
             document.getElementById('modalTitle').textContent = "Новое объявление";
             document.getElementById('editServiceId').value = "";
             document.getElementById('serviceStatus').value = "active";
@@ -1379,6 +1437,7 @@
                 return;
             }
 
+            pushHistoryState();
             document.getElementById('modalTitle').textContent = "Редактировать объявление";
             document.getElementById('editServiceId').value = s.id;
             document.getElementById('serviceName').value = s.name;
@@ -1396,6 +1455,7 @@
 
         window.closeModal = function() {
             document.getElementById('serviceModal').classList.add('hidden');
+            updateBackButtonVisibility();
         };
 
         window.compressAndSelectImage = function(e) {
