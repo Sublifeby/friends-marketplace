@@ -352,8 +352,8 @@
 
     <!-- Service Detail View Modal -->
     <div id="detailModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6 relative">
-            <div id="detailContent">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6 relative z-50">
+            <div id="detailContent" class="relative z-10">
                 <!-- Dynamically populated -->
             </div>
         </div>
@@ -361,7 +361,7 @@
 
     <!-- Create / Edit Modal -->
     <div id="serviceModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 relative">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 border border-white/10 max-h-[90vh] overflow-y-auto space-y-4 relative z-50">
             <div class="flex items-center justify-between pb-2 border-b border-white/5">
                 <h3 id="modalTitle" class="font-bold text-base">Новое объявление</h3>
                 <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-tg-card flex items-center justify-center text-tg-hint hover:text-tg-text">
@@ -614,7 +614,7 @@
 
         // Clean Share URL helper (Strikes out ugly Telegram web app hash/query params)
         window.shareService = function(id, name, event) {
-            if (event) event.stopPropagation();
+            if (event) event?.stopPropagation();
             const cleanBaseUrl = window.location.origin + window.location.pathname;
             const text = encodeURIComponent(`Посмотри объявление «${name}» в нашем закрытом клубе услуг!`);
             const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(cleanBaseUrl)}&text=${text}`;
@@ -630,7 +630,8 @@
             try { return JSON.parse(localStorage.getItem('sublife_contact_statuses') || '{}'); } catch(e) { return {}; }
         }
 
-        window.toggleContactStatus = function(serviceId, statusText) {
+        window.toggleContactStatus = function(serviceId, statusText, event) {
+            if (event) event.stopPropagation();
             const statuses = getContactStatuses();
             if (statuses[serviceId] === statusText) {
                 delete statuses[serviceId];
@@ -640,7 +641,7 @@
             localStorage.setItem('sublife_contact_statuses', JSON.stringify(statuses));
             renderCatalog();
             renderMyServices();
-            openDetailModal(serviceId);
+            openDetailModal(serviceId, false);
         };
 
         function getFavorites() {
@@ -661,7 +662,8 @@
         };
 
         // Admin Action: Toggle VIP / Featured Status
-        window.toggleServiceFeatured = async function(id, currentStatus) {
+        window.toggleServiceFeatured = async function(id, currentStatus, event) {
+            if (event) event.stopPropagation();
             if (!isAdmin) return;
             try {
                 const serviceRef = doc(db, "services", id);
@@ -870,6 +872,7 @@
 
         window.addReview = async function(serviceId, event) {
             event.preventDefault();
+            event.stopPropagation();
             const rating = parseInt(document.getElementById('reviewRating').value, 10);
             const comment = document.getElementById('reviewComment').value;
 
@@ -1022,7 +1025,6 @@
             });
 
             const totalUsersCount = Math.max(allUsers.length, Object.keys(authorsMap).length);
-            const authorsCount = Object.keys(authorsMap).length;
 
             document.getElementById('adminStatAppLaunches').textContent = globalStats.totalLaunches || 0;
             document.getElementById('adminStatTotalViews').textContent = totalViews;
@@ -1120,13 +1122,13 @@
                             <div class="text-xs text-tg-hint mt-0.5">Автор: @${s.authorUsername || 'unknown'} • ${s.price || 'Договорная'} • Просмотров: ${s.views || 0}</div>
                         </div>
                         <div class="flex items-center space-x-1.5 flex-shrink-0">
-                            <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured})" title="Закрепить как VIP" class="w-8 h-8 rounded-xl ${isFeatured ? 'bg-amber-400 text-black font-bold' : 'bg-tg-bg text-tg-hint hover:text-amber-400'} flex items-center justify-center text-xs transition-colors">
+                            <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured}, event)" title="Закрепить как VIP" class="w-8 h-8 rounded-xl ${isFeatured ? 'bg-amber-400 text-black font-bold' : 'bg-tg-bg text-tg-hint hover:text-amber-400'} flex items-center justify-center text-xs transition-colors">
                                 <i class="fa-solid fa-star"></i>
                             </button>
-                            <button onclick="openEditModal('${s.id}')" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                            <button onclick="openEditModal('${s.id}', event)" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <button onclick="deleteService('${s.id}')" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="deleteService('${s.id}', event)" class="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                 `;
@@ -1136,7 +1138,7 @@
         // Format tags highlighting in text
         function formatTags(text) {
             if (!text) return '';
-            return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
+            return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="event.stopPropagation(); setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
         }
 
         function renderCardHtml(s, showControls = false) {
@@ -1184,7 +1186,7 @@
                         ` : ''}
 
                         <div class="flex items-center justify-between pt-2 border-t border-white/5" onclick="event.stopPropagation()">
-                            <div onclick="openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}')" class="flex items-center space-x-2 min-w-0 pr-2 cursor-pointer hover:opacity-80 transition-opacity">
+                            <div onclick="openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}', event)" class="flex items-center space-x-2 min-w-0 pr-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
                                     ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-[10px]"></i>`}
                                 </div>
@@ -1199,10 +1201,10 @@
                                     <i class="${isFav ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star'}"></i>
                                 </button>
                                 ${canManage ? `
-                                    <button onclick="openEditModal('${s.id}')" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                                    <button onclick="openEditModal('${s.id}', event)" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
                                         <i class="fa-solid fa-pen"></i>
                                     </button>
-                                    <button onclick="deleteService('${s.id}')" class="bg-red-500/10 text-red-400 px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                                    <button onclick="deleteService('${s.id}', event)" class="bg-red-500/10 text-red-400 px-2 py-1 rounded-lg text-xs font-medium transition-colors">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 ` : ''}
@@ -1218,7 +1220,8 @@
         }
 
         // Seller Profile Modal
-        window.openSellerModal = function(username, name, avatar) {
+        window.openSellerModal = function(username, name, avatar, event) {
+            if (event) event.stopPropagation();
             pushHistoryState();
             const container = document.getElementById('sellerContent');
             const authorServices = allServices.filter(s => (s.authorUsername || '').toLowerCase() === (username || '').toLowerCase());
@@ -1230,7 +1233,7 @@
 
             container.innerHTML = `
                 <!-- Sticky Floating Close Button -->
-                <button onclick="closeSellerModal()" class="sticky top-0 float-right z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
+                <button onclick="closeSellerModal(event)" class="sticky top-0 float-right z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
                 <div class="flex items-center space-x-3 pb-3 border-b border-white/5">
@@ -1269,7 +1272,8 @@
             document.getElementById('sellerModal').classList.remove('hidden');
         };
 
-        window.closeSellerModal = function() {
+        window.closeSellerModal = function(event) {
+            if (event) event.stopPropagation();
             document.getElementById('sellerModal').classList.add('hidden');
             updateBackButtonVisibility();
         };
@@ -1302,7 +1306,7 @@
             container.innerHTML = `
                 <div class="relative">
                     <!-- Sticky Floating Close Button -->
-                    <button onclick="closeDetailModal()" class="sticky top-3 float-right mr-3 z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
+                    <button onclick="closeDetailModal(event)" class="sticky top-3 float-right mr-3 z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20 shadow-lg">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                     ${isFeatured ? '<div class="absolute top-3 left-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center space-x-1"><i class="fa-solid fa-crown text-[10px]"></i><span>VIP Закреплено</span></div>' : ''}
@@ -1325,17 +1329,17 @@
                     <div class="bg-tg-card p-3 rounded-xl border border-white/5 flex items-center justify-between text-xs">
                         <span class="text-tg-hint">Статус взаимодействия:</span>
                         <div class="flex space-x-1.5">
-                            <button onclick="toggleContactStatus('${s.id}', 'Написал продавцу')" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Написал продавцу' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
+                            <button onclick="toggleContactStatus('${s.id}', 'Написал продавцу', event)" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Написал продавцу' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
                                 Написал
                             </button>
-                            <button onclick="toggleContactStatus('${s.id}', 'Договорились')" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Договорились' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
+                            <button onclick="toggleContactStatus('${s.id}', 'Договорились', event)" class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${currentContactStatus === 'Договорились' ? 'bg-emerald-500 text-white' : 'bg-tg-bg text-tg-hint'}">
                                 Договорились
                             </button>
                         </div>
                     </div>
 
                     <div class="bg-tg-card p-3.5 rounded-xl flex items-center justify-between border border-white/5">
-                        <div onclick="closeDetailModal(); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}');" class="flex items-center space-x-2.5 cursor-pointer hover:opacity-80 transition-opacity min-w-0 pr-2">
+                        <div onclick="closeDetailModal(event); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}', event);" class="flex items-center space-x-2.5 cursor-pointer hover:opacity-80 transition-opacity min-w-0 pr-2">
                             <div class="w-8 h-8 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center font-bold overflow-hidden flex-shrink-0">
                                 ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user"></i>`}
                             </div>
@@ -1344,15 +1348,15 @@
                                 <div class="text-[10px] text-tg-hint truncate">${s.authorName || 'Участник клуба'}</div>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                        <div class="flex items-center space-x-1.5 flex-shrink-0" onclick="event.stopPropagation()">
                             ${isAdmin ? `
-                                <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured})" title="${isFeatured ? 'Открепить VIP' : 'Закрепить как VIP'}" class="px-2.5 py-1 rounded-xl font-extrabold text-[11px] flex items-center space-x-1 shadow-md transition-all active:scale-95 ${isFeatured ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black border border-amber-300' : 'bg-tg-bg text-amber-400 border border-amber-400/30 hover:bg-amber-400/10'}">
+                                <button onclick="toggleServiceFeatured('${s.id}', ${isFeatured}, event)" title="${isFeatured ? 'Открепить VIP' : 'Закрепить как VIP'}" class="px-2.5 py-1 rounded-xl font-extrabold text-[11px] flex items-center space-x-1 shadow-md transition-all active:scale-95 ${isFeatured ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-black border border-amber-300' : 'bg-tg-bg text-amber-400 border border-amber-400/30 hover:bg-amber-400/10'}">
                                     <i class="fa-solid fa-crown text-[10px]"></i>
                                     <span>${isFeatured ? 'VIP (Закреплено)' : 'Сделать VIP'}</span>
                                 </button>
                             ` : ''}
                             ${canEdit ? `
-                                <button onclick="closeDetailModal(); openEditModal('${s.id}')" title="Редактировать объявление" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
+                                <button onclick="closeDetailModal(event); openEditModal('${s.id}', event)" title="Редактировать объявление" class="bg-tg-bg text-tg-hint hover:text-tg-text px-2 py-1 rounded-lg text-xs font-medium transition-colors">
                                     <i class="fa-solid fa-pen"></i>
                                 </button>
                             ` : ''}
@@ -1372,12 +1376,12 @@
 
                     ${s.tags && s.tags.length > 0 ? `
                         <div class="flex flex-wrap gap-1.5 pt-1">
-                            ${s.tags.map(t => `<span onclick="closeDetailModal(); setSearchTag('${t}')" class="text-xs bg-tg-card text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 cursor-pointer hover:underline">${t}</span>`).join('')}
+                            ${s.tags.map(t => `<span onclick="closeDetailModal(event); setSearchTag('${t}')" class="text-xs bg-tg-card text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 cursor-pointer hover:underline">${t}</span>`).join('')}
                         </div>
                     ` : ''}
 
                     <!-- Reviews & Rating Section -->
-                    <div class="space-y-3 pt-2 border-t border-white/5">
+                    <div class="space-y-3 pt-2 border-t border-white/5" onclick="event.stopPropagation()">
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-tg-hint">Отзывы и оценки (${reviews.length})</h4>
                             ${avgRating ? `<span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-star mr-1"></i>${avgRating} / 5</span>` : ''}
@@ -1413,7 +1417,7 @@
                         </div>
                     </div>
 
-                    <div class="pt-2">
+                    <div class="pt-2" onclick="event.stopPropagation()">
                         <a href="${contactUrl}" target="_blank" class="w-full bg-tg-button text-tg-buttonText font-medium py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-tg-button/20 active:scale-95 transition-transform">
                             <i class="fa-solid fa-paper-plane"></i>
                             <span>Связаться в Telegram</span>
@@ -1425,7 +1429,8 @@
             document.getElementById('detailModal').classList.remove('hidden');
         };
 
-        window.closeDetailModal = function() {
+        window.closeDetailModal = function(event) {
+            if (event) event.stopPropagation();
             const detailModal = document.getElementById('detailModal');
             detailModal.classList.add('hidden');
             detailModal.removeAttribute('data-open-id');
@@ -1481,7 +1486,8 @@
             document.getElementById('serviceModal').classList.remove('hidden');
         };
 
-        window.openEditModal = function(id) {
+        window.openEditModal = function(id, event) {
+            if (event) event.stopPropagation();
             const s = allServices.find(item => item.id === id);
             if (!s) return;
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
@@ -1506,7 +1512,8 @@
             document.getElementById('serviceModal').classList.remove('hidden');
         };
 
-        window.closeModal = function() {
+        window.closeModal = function(event) {
+            if (event) event.stopPropagation();
             document.getElementById('serviceModal').classList.add('hidden');
             updateBackButtonVisibility();
         };
@@ -1622,7 +1629,8 @@
             }
         };
 
-        window.deleteService = async function(id) {
+        window.deleteService = async function(id, event) {
+            if (event) event.stopPropagation();
             const s = allServices.find(item => item.id === id);
             if (!s) return;
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
