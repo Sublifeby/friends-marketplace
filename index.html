@@ -352,9 +352,9 @@
         </div>
     </div>
 
-    <!-- Service Detail View Modal -->
+    <!-- Service Detail View Modal (UPDATED DESIGN & CONTROLS) -->
     <div id="detailModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
-        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto space-y-4 pb-6 relative z-50">
+        <div class="bg-tg-bg w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-white/10 max-h-[92vh] overflow-y-auto relative z-50 hide-scrollbar">
             <div id="detailContent" class="relative z-10"></div>
         </div>
     </div>
@@ -520,7 +520,6 @@
         if (isAdmin) {
             document.getElementById('navAdmin').classList.remove('hidden');
         } else {
-            // Force remove Admin tab if non-admin
             const navAdminEl = document.getElementById('navAdmin');
             if (navAdminEl) navAdminEl.remove();
             const tabAdminEl = document.getElementById('tabAdmin');
@@ -636,6 +635,12 @@
             localStorage.setItem('sublife_favorites', JSON.stringify(favs));
             renderCatalog();
             renderMyServices();
+            
+            // Refresh detail modal if open
+            const detailModal = document.getElementById('detailModal');
+            if (detailModal && !detailModal.classList.contains('hidden')) {
+                openDetailModal(id, false);
+            }
         };
 
         window.toggleServiceFeatured = async function(id, currentStatus, event) {
@@ -906,7 +911,7 @@
 
         function formatTags(text) {
             if (!text) return '';
-            return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="event.stopPropagation(); setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
+            return text.replace(/(#[a-zA-Z0-9а-яА-ЯёЁ_]+)/g, '<span onclick="event.stopPropagation(); closeDetailModal(); setSearchTag(\'$1\')" class="text-tg-accent font-semibold cursor-pointer hover:underline">$1</span>');
         }
 
         window.renderCatalog = function() {
@@ -992,7 +997,6 @@
             document.getElementById('adminStatPending').textContent = pendingCount;
             document.getElementById('allUsersBadge').textContent = allUsers.length;
 
-            // Reports Render
             const repContainer = document.getElementById('adminReportsContainer');
             if (globalReports.length > 0) {
                 repContainer.classList.remove('hidden');
@@ -1014,7 +1018,6 @@
                 }).join('');
             } else { repContainer.classList.add('hidden'); }
 
-            // Users Verified Management List
             document.getElementById('adminUsersList').innerHTML = allUsers.map(u => `
                 <div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
                     <div class="flex items-center space-x-2 min-w-0 pr-2">
@@ -1027,7 +1030,6 @@
                 </div>
             `).join('');
 
-            // Moderation Services List
             const container = document.getElementById('adminServicesList');
             let filteredAdminServices = allServices.filter(s => {
                 const st = s.status || 'active';
@@ -1061,7 +1063,6 @@
             } catch(e) { showToast("Ошибка", "error"); }
         };
 
-        // FULL CONTROL BUTTONS IN CARDS (Restored exactly as required)
         window.renderCardHtml = function(s, showControls = false) {
             const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
             const canManage = showControls || isOwner || isAdmin;
@@ -1105,7 +1106,6 @@
                             </div>
                         ` : ''}
 
-                        <!-- Restored full control button toolbar -->
                         <div class="flex items-center justify-between pt-2 border-t border-white/5" onclick="event.stopPropagation()">
                             <div onclick="openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}', event)" class="flex items-center space-x-1.5 min-w-0 pr-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
@@ -1146,6 +1146,7 @@
             `;
         };
 
+        // PERFECTED FULL DETAIL VIEW WITH PROPER IMAGE LAYOUT & SELLER INFO
         window.openDetailModal = function(id, pushState = true) {
             if (pushState) pushHistoryState();
             const s = allServices.find(item => item.id === id);
@@ -1162,60 +1163,123 @@
             const container = document.getElementById('detailContent');
             const images = (s.images && s.images.length > 0) ? s.images : (s.imageUrl ? [s.imageUrl] : []);
             const contactUrl = `https://t.me/${s.authorUsername || ''}?text=${encodeURIComponent('Здравствуйте! Меня заинтересовало ваше объявление: ' + s.name)}`;
+            const isFav = getFavorites().includes(s.id);
+            const isFeatured = !!s.isFeatured;
+            const isOwner = String(s.authorId) === String(currentUser.id) || (currentUser.username && s.authorUsername && s.authorUsername.toLowerCase() === currentUser.username.toLowerCase());
+            const canManage = isOwner || isAdmin;
+
+            const authorUser = allUsers.find(u => (u.username || '').toLowerCase() === (s.authorUsername || '').toLowerCase());
+            const trustBadgeHtml = authorUser ? renderTrustBadgeHtml(authorUser.isVerified) : '';
 
             container.innerHTML = `
-                <div class="relative">
-                    <button onclick="closeDetailModal(event)" class="sticky top-3 float-right mr-3 z-50 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-sm border border-white/20">
+                <!-- Sticky Top Header Container for Close & Floating Badge -->
+                <div class="relative w-full">
+                    <button onclick="closeDetailModal(event)" class="absolute top-3 right-3 z-50 w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-base border border-white/20 shadow-lg active:scale-95 transition-transform">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
+                    ${isFeatured ? '<div class="absolute top-3 left-3 z-30 bg-gradient-to-r from-amber-500 to-yellow-400 text-black text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center space-x-1"><i class="fa-solid fa-crown text-[10px]"></i><span>VIP</span></div>' : ''}
+                    
                     ${images.length > 0 ? `
-                        <div class="relative h-64 w-full bg-black">
+                        <div class="relative h-64 sm:h-72 w-full bg-black rounded-t-3xl sm:rounded-t-2xl overflow-hidden">
                             <img id="activeGalleryImg" src="${images[0]}" class="w-full h-full object-cover">
                             ${images.length > 1 ? `
-                                <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-1.5 z-10 px-4">
+                                <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-1.5 z-20 px-4">
                                     ${images.map((img, idx) => `
-                                        <button onclick="document.getElementById('activeGalleryImg').src='${img}'" class="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white transition-colors"></button>
+                                        <button onclick="document.getElementById('activeGalleryImg').src='${img}'" class="w-2.5 h-2.5 rounded-full bg-white/70 hover:bg-white active:scale-125 transition-all shadow-md"></button>
                                     `).join('')}
                                 </div>
                             ` : ''}
                         </div>
-                    ` : ''}
+                    ` : '<div class="h-6"></div>'}
                 </div>
+
                 <div class="p-5 space-y-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <span class="text-[10px] bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${getCategoryName(s.category)}</span>
-                            <span class="text-[10px] bg-white/5 text-tg-hint px-2 py-0.5 rounded-full ml-1"><i class="fa-solid fa-location-dot mr-1"></i>${s.city || 'Минск'}</span>
-                            <h2 class="font-bold text-xl mt-2 text-tg-text">${s.name}</h2>
+                    <!-- Title, Categories & Price Block (Completely Clean Separation) -->
+                    <div class="flex items-start justify-between border-b border-white/5 pb-3">
+                        <div class="min-w-0 pr-2">
+                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                <span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${getCategoryName(s.category)}</span>
+                                <span class="text-[10px] bg-white/5 text-tg-hint px-2 py-0.5 rounded-full"><i class="fa-solid fa-location-dot mr-1"></i>${s.city || 'Минск'}</span>
+                            </div>
+                            <h2 class="font-bold text-xl mt-2 text-tg-text leading-snug break-words">${s.name}</h2>
                         </div>
-                        <div class="text-right">
+                        <div class="text-right flex-shrink-0">
                             <div class="text-lg font-bold text-tg-text">${s.price || 'Договорная'}</div>
-                            ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400">${s.friendPrice}</div>` : ''}
+                            ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400 mt-0.5"><i class="fa-solid fa-bolt mr-1"></i>${s.friendPrice}</div>` : ''}
                         </div>
                     </div>
 
-                    <div class="space-y-1">
-                        <h4 class="text-xs font-bold uppercase text-tg-hint">Полное описание</h4>
-                        <p class="text-sm text-tg-text leading-relaxed whitespace-pre-wrap">${formatTags(s.desc || s.shortDesc)}</p>
+                    <!-- Full Control Buttons Bar -->
+                    <div class="flex items-center space-x-2 bg-tg-card p-2 rounded-2xl border border-white/5">
+                        <a href="${contactUrl}" target="_blank" class="flex-1 bg-tg-button text-tg-buttonText py-2.5 rounded-xl text-xs font-medium flex items-center justify-center space-x-2 shadow-md shadow-tg-button/20 active:scale-95 transition-transform">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Связаться в Telegram</span>
+                        </a>
+                        <button onclick="shareService('${s.id}', '${s.name}', event)" title="Поделиться" class="w-10 h-10 rounded-xl bg-tg-bg text-tg-hint hover:text-tg-accent flex items-center justify-center text-sm transition-colors">
+                            <i class="fa-solid fa-share-nodes"></i>
+                        </button>
+                        <button onclick="toggleFavorite('${s.id}', event)" title="В избранное" class="w-10 h-10 rounded-xl bg-tg-bg text-tg-hint hover:text-amber-400 flex items-center justify-center text-sm transition-colors">
+                            <i class="${isFav ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star'}"></i>
+                        </button>
+                        ${isAdmin ? `
+                            <button onclick="toggleServiceFeatured('${s.id}',${isFeatured}, event); openDetailModal('${s.id}', false);" title="VIP" class="w-10 h-10 rounded-xl ${isFeatured ? 'bg-amber-400 text-black font-bold' : 'bg-tg-bg text-amber-400'} flex items-center justify-center text-sm transition-colors">
+                                <i class="fa-solid fa-crown"></i>
+                            </button>
+                        ` : ''}
+                        ${canManage ? `
+                            <button onclick="closeDetailModal(event); openEditModal('${s.id}', event)" title="Редактировать" class="w-10 h-10 rounded-xl bg-tg-bg text-tg-hint hover:text-tg-text flex items-center justify-center text-sm transition-colors">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteService('${s.id}', event); closeDetailModal(event);" title="Удалить" class="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-sm transition-colors">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        ` : ''}
                     </div>
+
+                    <!-- Seller Card Info & Status -->
+                    <div onclick="closeDetailModal(event); openSellerModal('${s.authorUsername}', '${s.authorName}', '${s.authorAvatar}', event);" class="bg-tg-card p-3.5 rounded-2xl flex items-center justify-between border border-white/5 cursor-pointer hover:border-tg-accent/30 transition-all">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <div class="w-10 h-10 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center font-bold overflow-hidden flex-shrink-0">
+                                ${s.authorAvatar ? `<img src="${s.authorAvatar}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-sm"></i>`}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <span class="text-xs font-bold text-tg-text truncate">@${s.authorUsername || 'friend'}</span>
+                                    ${trustBadgeHtml}
+                                </div>
+                                <div class="text-[11px] text-tg-hint truncate">${s.authorName || 'Участник закрытого клуба'}</div>
+                            </div>
+                        </div>
+                        <div class="text-tg-hint text-xs flex items-center space-x-1 flex-shrink-0">
+                            <span>Профиль</span>
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Description Section -->
+                    <div class="space-y-1.5 pt-1">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-tg-hint">Полное описание</h4>
+                        <p class="text-sm text-tg-text leading-relaxed whitespace-pre-wrap font-normal">${formatTags(s.desc || s.shortDesc)}</p>
+                    </div>
+
+                    ${s.tags && s.tags.length > 0 ? `
+                        <div class="flex flex-wrap gap-1.5 pt-2">
+                            ${s.tags.map(t => `<span onclick="closeDetailModal(event); setSearchTag('${t}')" class="text-xs bg-tg-card text-tg-accent px-2.5 py-1 rounded-lg border border-white/5 cursor-pointer hover:underline">${t}</span>`).join('')}
+                        </div>
+                    ` : ''}
 
                     <!-- Report Section -->
-                    <form onsubmit="submitReport('${s.id}', event)" class="bg-tg-card p-3 rounded-xl border border-white/5 space-y-2">
+                    <form onsubmit="submitReport('${s.id}', event)" class="bg-tg-card p-3 rounded-2xl border border-white/5 space-y-2">
                         <span class="text-xs text-tg-hint block">Пожаловаться на объявление:</span>
                         <div class="flex space-x-2">
-                            <select id="reportReason" class="bg-tg-bg text-tg-text text-xs px-2.5 py-1.5 rounded-lg border border-white/5 flex-1">
+                            <select id="reportReason" class="bg-tg-bg text-tg-text text-xs px-2.5 py-1.5 rounded-xl border border-white/5 flex-1 focus:outline-none">
                                 <option value="Неактуально / Продано">Неактуально / Продано</option>
                                 <option value="Завышена цена">Завышена цена</option>
                                 <option value="Спам / Мошенничество">Спам / Мошенничество</option>
                             </select>
-                            <button type="submit" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-3 py-1.5 rounded-lg font-medium">Отправить</button>
+                            <button type="submit" class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs px-3 py-1.5 rounded-xl font-medium active:scale-95 transition-transform">Отправить</button>
                         </div>
                     </form>
-
-                    <a href="${contactUrl}" target="_blank" class="w-full bg-tg-button text-tg-buttonText font-medium py-3 rounded-xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-tg-button/20">
-                        <i class="fa-solid fa-paper-plane"></i>
-                        <span>Связаться в Telegram</span>
-                    </a>
                 </div>
             `;
 
@@ -1294,7 +1358,6 @@
             const existingService = id ? allServices.find(item => item.id === id) : null;
             const isPending = globalSettings.preModeration && !isAdmin;
 
-            // City resolution (standard or custom)
             const citySelectVal = document.getElementById('serviceCitySelect').value;
             let finalCity = citySelectVal;
             if (citySelectVal === 'custom') {
@@ -1350,7 +1413,7 @@
         };
 
         window.switchTab = function(tab) {
-            if (tab === 'admin' && !isAdmin) return; // Restrict non-admin tab access
+            if (tab === 'admin' && !isAdmin) return;
 
             activeTab = tab;
             ['tabCatalog', 'tabProfile', 'tabAdmin'].forEach(t => {
