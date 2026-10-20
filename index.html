@@ -41,7 +41,7 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
 </style>
 </head>
 <body class="pb-24">
-<div id="toastContainer" class="fixed top-3 left-0 right-0 z-[60] flex flex-col items-center space-y-2 pointer-events-none px-4"></div>
+<div id="toastContainer" class="fixed top-3 left-0 right-0 z-[9999] flex flex-col items-center space-y-2 pointer-events-none px-4"></div>
 
 <header class="sticky top-0 z-40 bg-tg-bg/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center justify-between">
   <div onclick="switchTab('profile')" class="flex items-center space-x-3 min-w-0 pr-2 cursor-pointer">
@@ -217,6 +217,7 @@ const CATS = { services:'Услуги', goods:'Товары', realestate:'Нед
 const TAGS = ['аренда','юрист','ремонт','фото','машина','продажа','обучение'];
 
 const $ = id => document.getElementById(id);
+let zTop = 50; const front = id => { $(id).style.zIndex = ++zTop; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const W = o => Object.assign(window, o);
 
@@ -274,9 +275,10 @@ renderChips();
 const anyOverlay = () => ['detailModal','sellerModal','serviceModal'].some(id => !$(id).classList.contains('hidden'));
 function updateBack() { if (tg?.BackButton) (anyOverlay() || activeTab !== 'catalog') ? tg.BackButton.show() : tg.BackButton.hide(); }
 function handleBack() {
-  if (!$('serviceModal').classList.contains('hidden')) closeModal();
-  else if (!$('detailModal').classList.contains('hidden')) closeDetailModal();
-  else if (!$('sellerModal').classList.contains('hidden')) closeSellerModal();
+  const closers = { serviceModal: closeModal, detailModal: closeDetailModal, sellerModal: closeSellerModal };
+  const open = Object.keys(closers).filter(id => !$(id).classList.contains('hidden'))
+    .sort((a, b) => (+$(b).style.zIndex || 50) - (+$(a).style.zIndex || 50));
+  if (open.length) closers[open[0]]();
   else if (activeTab !== 'catalog') switchTab('catalog');
   else tg?.close?.();
 }
@@ -300,7 +302,8 @@ const parsePrice = s => { const n = parseInt(String(s || '').replace(/[^\d]/g, '
 const num = s => s.priceNum > 0 ? s.priceNum : parsePrice(s.friendPrice || s.price);
 const isOwner = s => !!tgUser && (String(s.authorId) === String(currentUser.id) || (uname && (s.authorUsername || '').toLowerCase() === uname));
 const imgsOf = s => (s.images && s.images.length) ? s.images : (s.imageUrl ? [s.imageUrl] : []);
-const badge = v => v ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded-md border border-emerald-500/30 flex items-center gap-1"><i class="fa-solid fa-circle-check text-[9px]"></i>Verified</span>' : '';
+const isVer = s => !!s.authorVerified || (isOwner(s) && !!me?.isVerified);
+const badge = v => v ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded-md border border-emerald-500/30 flex items-center flex-shrink-0 gap-1"><i class="fa-solid fa-circle-check text-[9px]"></i>Verified</span>' : '';
 const catName = c => CATS[c] || 'Услуга';
 const needTg = () => { if (!tgUser) { showToast("Откройте приложение через Telegram", "error"); return true; } return false; };
 function formatTags(t) {
@@ -336,7 +339,7 @@ function renderCard(s) {
       <div class="flex items-center justify-between pt-2 border-t border-white/5" onclick="event.stopPropagation()">
         <div onclick="openSellerModal('${u}', event)" class="flex items-center gap-1.5 min-w-0 pr-2 cursor-pointer">
           <div class="w-6 h-6 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center flex-shrink-0 overflow-hidden">${avatarHtml(s.authorAvatar)}</div>
-          <span class="text-xs text-tg-hint truncate">@${u || 'friend'}</span>${badge(s.authorVerified)}
+          <span class="text-xs text-tg-hint truncate">@${u || 'friend'}</span>${badge(isVer(s))}
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <button onclick="shareService('${s.id}', event)" class="ibtn hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
@@ -428,7 +431,7 @@ function openDetailModal(id) {
       <div onclick="openSellerModal('${u}', event)" class="card p-3.5 flex items-center justify-between cursor-pointer">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-10 h-10 rounded-full bg-tg-button/20 text-tg-accent flex items-center justify-center overflow-hidden flex-shrink-0">${avatarHtml(s.authorAvatar)}</div>
-          <div class="min-w-0"><div class="flex items-center gap-1.5"><span class="text-xs font-bold truncate">@${u || 'friend'}</span>${badge(s.authorVerified)}</div>
+          <div class="min-w-0"><div class="flex items-center gap-1.5"><span class="text-xs font-bold truncate">@${u || 'friend'}</span>${badge(isVer(s))}</div>
             <div class="text-[11px] text-tg-hint truncate">${esc(s.authorName || 'Участник закрытого клуба')}</div></div>
         </div>
         <div class="text-tg-hint text-xs flex-shrink-0">Профиль <i class="fa-solid fa-chevron-right text-[10px]"></i></div>
@@ -444,7 +447,7 @@ function openDetailModal(id) {
         </div>
       </form>
     </div>`;
-  $('detailModal').classList.remove('hidden'); updateBack();
+  $('detailModal').classList.remove('hidden'); front('detailModal'); updateBack();
 }
 function closeDetailModal(e) { e?.stopPropagation?.(); $('detailModal').classList.add('hidden'); updateBack(); }
 
@@ -461,7 +464,7 @@ function openSellerModal(username, e) {
     </div>
     <button onclick="openContact('${esc(username)}', event)" class="btn w-full py-2.5 mb-3"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
     <div class="space-y-3">${list.length ? list.map(renderCard).join('') : '<p class="text-xs text-tg-hint text-center py-6">Нет активных объявлений</p>'}</div>`;
-  $('sellerModal').classList.remove('hidden'); updateBack();
+  $('sellerModal').classList.remove('hidden'); front('sellerModal'); updateBack();
 }
 function closeSellerModal(e) { e?.stopPropagation?.(); $('sellerModal').classList.add('hidden'); updateBack(); }
 function openContact(username, e) {
@@ -560,7 +563,7 @@ function openAddModal() {
   if (!currentUser.username) return showToast("Задайте username в настройках Telegram, чтобы с вами могли связаться", "error");
   photos = []; $('serviceForm').reset(); renderPhotos();
   $('modalTitle').textContent = "Новое объявление"; $('editServiceId').value = ""; $('customCityContainer').classList.add('hidden');
-  $('serviceModal').classList.remove('hidden'); updateBack();
+  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack();
 }
 function openEditModal(id, e) {
   e?.stopPropagation?.();
@@ -575,7 +578,7 @@ function openEditModal(id, e) {
   $('serviceShortDesc').value = s.shortDesc || s.desc || ''; $('serviceDesc').value = s.desc || '';
   $('serviceTags').value = (s.tags || []).map(t => t.replace('#', '')).join(', ');
   photos = [...imgsOf(s)]; renderPhotos();
-  $('serviceModal').classList.remove('hidden'); updateBack();
+  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack();
 }
 function closeModal() { $('serviceModal').classList.add('hidden'); updateBack(); }
 
@@ -675,6 +678,17 @@ function openDeepLink() {
   const id = p.slice(8); if (allServices.some(s => s.id === id)) { deepLinkDone = true; openDetailModal(id); }
 }
 
+const syncedV = new Set();
+function syncVerified() {
+  if (!db) return;
+  const upd = (s, v) => { const k = s.id + v; if (syncedV.has(k)) return; syncedV.add(k); updateDoc(doc(db, 'services', s.id), { authorVerified: v }).catch(() => {}); };
+  if (isAdmin) allServices.forEach(s => {
+    const u = allUsers.find(x => String(x.id) === String(s.authorId) || (x.username || '').toLowerCase() === (s.authorUsername || '').toLowerCase());
+    if (u && !!u.isVerified !== !!s.authorVerified) upd(s, !!u.isVerified);
+  });
+  else if (me) allServices.filter(isOwner).forEach(s => { if (!!me.isVerified !== !!s.authorVerified) upd(s, !!me.isVerified); });
+}
+
 async function initRealtimeSync() {
   if (!db) return showToast("Нет соединения с базой", "error");
   if (AUTH_URL && tg?.initData) {
@@ -702,16 +716,16 @@ async function initRealtimeSync() {
   onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(200)), snap => {
     allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     $('totalOffersCount').textContent = allServices.filter(s => (s.status || 'active') === 'active').length;
-    rerender(); openDeepLink();
+    rerender(); openDeepLink(); syncVerified();
   }, err => { console.error(err); $('servicesList').innerHTML = '<p class="text-center text-sm text-red-400 py-10">Не удалось загрузить объявления</p>'; });
 
   if (tgUser) onSnapshot(doc(db, 'app_users', String(currentUser.id)), d => {
     me = d.exists() ? d.data() : null;
-    const b = badge(me?.isVerified); $('userBadgeHeader').innerHTML = b; $('userBadgeProfile').innerHTML = b;
+    const b = badge(me?.isVerified); $('userBadgeHeader').innerHTML = b; $('userBadgeProfile').innerHTML = b; rerender(); syncVerified();
   }, () => {});
 
   if (isAdmin) {
-    onSnapshot(collection(db, 'app_users'), snap => { allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); });
+    onSnapshot(collection(db, 'app_users'), snap => { allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); syncVerified(); });
     onSnapshot(collection(db, 'reports'), snap => { globalReports = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); });
   }
 }
