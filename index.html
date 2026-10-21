@@ -97,19 +97,21 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
     <div class="bg-gradient-to-br from-tg-card to-tg-button/10 rounded-2xl p-4 border border-tg-accent/20 space-y-3">
       <div class="flex items-center space-x-2">
         <div class="w-8 h-8 rounded-xl bg-tg-accent/20 text-tg-accent flex items-center justify-center"><i class="fa-solid fa-user-plus"></i></div>
-        <div><h3 class="font-bold text-sm">Пригласить друзей</h3><p class="text-[11px] text-tg-hint">Поделитесь вашей личной ссылкой</p></div>
+        <div><h3 class="font-bold text-sm">Пригласить друзей</h3><p class="text-[11px] text-tg-hint">Приглашайте друзей и получайте бонусы</p></div>
       </div>
       <div class="flex items-center space-x-2 bg-tg-bg/80 p-2.5 rounded-xl border border-white/5">
         <input type="text" id="referralLinkInput" readonly class="bg-transparent text-xs text-tg-hint w-full focus:outline-none truncate">
         <button onclick="copyReferralLink()" class="bg-tg-card px-3 py-1.5 rounded-lg text-xs font-medium flex-shrink-0"><i class="fa-solid fa-copy mr-1"></i>Копировать</button>
       </div>
       <button onclick="shareReferralLink()" class="btn w-full py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Отправить в чат Telegram</span></button>
+      <div id="refStats" class="space-y-2 pt-1"></div>
     </div>
     <div class="space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-base">Мои объявления</h3>
         <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium"><i class="fa-solid fa-plus mr-1"></i>Добавить</button>
       </div>
+      <div id="myStats"></div>
       <div id="myServicesList" class="space-y-3.5"></div>
     </div>
   </section>
@@ -128,6 +130,10 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
       </label>
     </div>
     <div class="grid grid-cols-2 gap-2.5" id="adminStats"></div>
+    <div id="adminClaimsContainer" class="card !border-amber-400/20 p-4 space-y-3 hidden">
+      <h3 class="font-bold text-sm text-amber-400"><i class="fa-solid fa-gift mr-2"></i>Заявки на бонус (<span id="claimsBadge">0</span>)</h3>
+      <div id="adminClaimsList" class="space-y-2.5 max-h-52 overflow-y-auto"></div>
+    </div>
     <div id="adminReportsContainer" class="card !border-red-500/20 p-4 space-y-3 hidden">
       <h3 class="font-bold text-sm text-red-400"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Жалобы (<span id="reportsBadge">0</span>)</h3>
       <div id="adminReportsList" class="space-y-2.5 max-h-52 overflow-y-auto"></div>
@@ -198,7 +204,7 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc, increment, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc, increment, onSnapshot, query, orderBy, limit, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
@@ -252,7 +258,8 @@ $('profileBigName').textContent = currentUser.first_name || 'Участник к
 $('profileBigUsername').textContent = currentUser.username ? '@' + currentUser.username : (tgUser ? 'ID: ' + currentUser.id : 'Откройте через Telegram');
 if (currentUser.photo_url) $('userAvatar').innerHTML = $('profileBigAvatar').innerHTML = `<img src="${esc(currentUser.photo_url)}" class="w-full h-full object-cover">`;
 
-const refCode = currentUser.username || currentUser.id;
+const refCode = currentUser.id;
+const REF_STEP = 3, BONUS_DAYS = 7;
 const myReferralLink = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${refCode}` : `https://t.me/${BOT_USERNAME}?startapp=ref_${refCode}`;
 $('referralLinkInput').value = myReferralLink;
 
@@ -309,6 +316,7 @@ const parsePrice = s => { const n = parseInt(String(s || '').replace(/[^\d]/g, '
 const num = s => s.priceNum > 0 ? s.priceNum : parsePrice(s.friendPrice || s.price);
 const isOwner = s => !!tgUser && (String(s.authorId) === String(currentUser.id) || (uname && (s.authorUsername || '').toLowerCase() === uname));
 const imgsOf = s => (s.images && s.images.length) ? s.images : (s.imageUrl ? [s.imageUrl] : []);
+const isFeat = s => !!s.isFeatured && (!s.featuredUntil || s.featuredUntil > Date.now());
 const isVer = s => !!s.authorVerified || (isOwner(s) && !!me?.isVerified);
 const badge = v => v ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 font-bold px-1.5 py-0.5 rounded-md border border-emerald-500/30 flex items-center flex-shrink-0 gap-1"><i class="fa-solid fa-circle-check text-[9px]"></i>Verified</span>' : '';
 const catName = c => CATS[c] || 'Услуга';
@@ -323,7 +331,7 @@ document.addEventListener('click', e => {
 
 /* ---------- Карточка ---------- */
 function renderCard(s) {
-  const imgs = imgsOf(s), isFav = favs().includes(s.id), feat = !!s.isFeatured, st = s.status || 'active';
+  const imgs = imgsOf(s), isFav = favs().includes(s.id), feat = isFeat(s), st = s.status || 'active';
   const manage = isOwner(s) || isAdmin, arch = st === 'archived';
   const u = safe(s.authorUsername);
   return `<div onclick="openDetailModal('${s.id}')" class="card overflow-hidden relative cursor-pointer active:scale-[0.99] transition-all ${feat ? '!border-amber-400/50 shadow-lg shadow-amber-400/10' : ''}">
@@ -354,7 +362,7 @@ function renderCard(s) {
           ${manage ? `<button onclick="toggleArchive('${s.id}', event)" title="В архив / вернуть" class="ibtn"><i class="fa-solid fa-box-archive"></i></button>
             <button onclick="openEditModal('${s.id}', event)" class="ibtn"><i class="fa-solid fa-pen"></i></button>
             <button onclick="deleteService('${s.id}', event)" class="ibtn !bg-red-500/10 !text-red-400"><i class="fa-solid fa-trash"></i></button>` : ''}
-          <button onclick="openContact('${u}', event)" class="btn px-3 py-1.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться</span></button>
+          <button onclick="openContact('${u}', event, '${s.id}')" class="btn px-3 py-1.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться</span></button>
         </div>
       </div>
     </div></div>`;
@@ -378,7 +386,7 @@ function renderCatalog() {
     return (s.name || '').toLowerCase().includes(q) || (s.shortDesc || s.desc || '').toLowerCase().includes(q) || (s.tags || []).join(' ').toLowerCase().includes(q);
   });
   list.sort((a, b) => {
-    if (!!a.isFeatured !== !!b.isFeatured) return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+    if (isFeat(a) !== isFeat(b)) return (isFeat(b) ? 1 : 0) - (isFeat(a) ? 1 : 0);
     if (sort === 'price_asc') return num(a) - num(b);
     if (sort === 'price_desc') return num(b) - num(a);
     return (b.createdAt || 0) - (a.createdAt || 0);
@@ -388,18 +396,20 @@ function renderCatalog() {
 }
 function renderMyServices() {
   const mine = allServices.filter(isOwner);
-  $('myServicesList').innerHTML = mine.length ? mine.map(renderCard).join('') :
+  const sum = k => mine.reduce((a, x) => a + (x[k] || 0), 0);
+  $('myStats').innerHTML = mine.length ? `<div class="grid grid-cols-3 gap-2 mb-3">${[['fa-eye','Просмотры','views'],['fa-paper-plane','Обращения','contactClicks'],['fa-star','В избранном','favCount']].map(([i, l, k]) => `<div class="card p-3 text-center"><div class="text-lg font-bold">${sum(k)}</div><div class="text-[10px] text-tg-hint"><i class="fa-solid ${i} mr-1"></i>${l}</div></div>`).join('')}</div>` : '';
+  $('myServicesList').innerHTML = mine.length ? mine.map(x => renderCard(x) + `<div class="flex gap-4 text-[11px] text-tg-hint px-2 -mt-2"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div>`).join('') :
     '<div class="text-center py-12 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><p class="text-xs font-medium">У вас пока нет объявлений</p><button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать первое объявление</button></div>';
 }
 let _t; const filterServices = () => { clearTimeout(_t); _t = setTimeout(renderCatalog, 200); };
-const rerender = () => { renderCatalog(); renderMyServices(); if (isAdmin) renderAdminPanel(); };
+const rerender = () => { renderCatalog(); renderMyServices(); renderRef(); if (isAdmin) { renderAdminPanel(); renderClaims(); } };
 
 /* ---------- Детальная карточка ---------- */
 function setGalleryImg(i) { const el = $('activeGalleryImg'); if (el && detailImgs[i]) el.src = detailImgs[i]; }
 function openDetailModal(id) {
   const s = allServices.find(x => x.id === id); if (!s) return;
   $('detailModal').dataset.id = id;
-  const owner = isOwner(s), manage = owner || isAdmin, feat = !!s.isFeatured, isFav = favs().includes(id), u = safe(s.authorUsername);
+  const owner = isOwner(s), manage = owner || isAdmin, feat = isFeat(s), isFav = favs().includes(id), u = safe(s.authorUsername);
   detailImgs = imgsOf(s);
 
   if (!sessionStorage.getItem('v_' + id)) {
@@ -428,7 +438,7 @@ function openDetailModal(id) {
           ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400 mt-0.5"><i class="fa-solid fa-bolt mr-1"></i>${esc(s.friendPrice)}</div>` : ''}</div>
       </div>
       <div class="flex items-center gap-2 bg-tg-card p-2 rounded-2xl border border-white/5">
-        <button onclick="openContact('${u}', event)" class="btn flex-1 py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться в Telegram</span></button>
+        <button onclick="openContact('${u}', event, '${id}')" class="btn flex-1 py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться в Telegram</span></button>
         <button onclick="shareService('${id}', event)" class="ibtn !w-10 !h-10 hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
         <button onclick="toggleFavorite('${id}', event)" class="ibtn !w-10 !h-10"><i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i></button>
         ${isAdmin ? `<button onclick="toggleServiceFeatured('${id}', ${feat}, event)" class="ibtn !w-10 !h-10 ${feat ? '!bg-amber-400 !text-black' : '!text-amber-400'}"><i class="fa-solid fa-crown"></i></button>` : ''}
@@ -462,20 +472,30 @@ function closeDetailModal(e) { e?.stopPropagation?.(); $('detailModal').classLis
 function openSellerModal(username, e) {
   e?.stopPropagation?.(); if (!username) return;
   const k = username.toLowerCase();
-  const list = allServices.filter(s => (s.authorUsername || '').toLowerCase() === k && (s.status || 'active') === 'active');
+  const all = allServices.filter(s => (s.authorUsername || '').toLowerCase() === k);
+  const list = all.filter(s => (s.status || 'active') === 'active');
+  const sid = String(all[0]?.authorId || '');
   const verified = list.some(s => s.authorVerified) || allUsers.some(u => (u.username || '').toLowerCase() === k && u.isVerified);
+  $('sellerContent').dataset.sid = sid;
   $('sellerContent').innerHTML = `
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-1">
       <div class="flex items-center gap-2 min-w-0"><h3 class="font-bold text-base truncate">@${esc(username)}</h3>${badge(verified)}</div>
       <button onclick="closeSellerModal()" class="ibtn !w-8 !h-8 !rounded-full !bg-tg-card"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <button onclick="openContact('${safe(username)}', event)" class="btn w-full py-2.5 mb-3"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
+    <div id="sellerMeta" class="text-xs text-tg-hint mb-3">Объявлений: ${list.length}</div>
+    <div class="flex gap-2 mb-3">
+      <button onclick="openContact('${safe(username)}', event)" class="btn flex-1 py-2.5"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
+      ${sid ? `<button onclick="shareSeller('${safe(sid)}')" class="ibtn !w-11 !h-11" title="Поделиться профилем"><i class="fa-solid fa-share-nodes"></i></button>` : ''}
+    </div>
+    <div id="sellerRate"></div>
     <div class="space-y-3">${list.length ? list.map(renderCard).join('') : '<p class="text-xs text-tg-hint text-center py-6">Нет активных объявлений</p>'}</div>`;
   $('sellerModal').classList.remove('hidden'); front('sellerModal'); updateBack();
+  if (sid && db) loadSellerExtra(sid, all);
 }
 function closeSellerModal(e) { e?.stopPropagation?.(); $('sellerModal').classList.add('hidden'); updateBack(); }
-function openContact(username, e) {
+function openContact(username, e, sid) {
   e?.stopPropagation?.();
+  if (sid) trackContact(sid);
   if (!username || username === 'user' || username === 'unknown') return showToast("У автора не указан username", "error");
   const url = `https://t.me/${username}`;
   tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, '_blank');
@@ -498,14 +518,14 @@ function toggleFavorite(id, e) {
   e?.stopPropagation?.();
   let f = favs(); const had = f.includes(id);
   f = had ? f.filter(x => x !== id) : [...f, id];
-  localStorage.setItem('sublife_favorites', JSON.stringify(f)); _favs = f; haptic();
+  localStorage.setItem('sublife_favorites', JSON.stringify(f)); _favs = f; haptic(); csSaveFavs(f); countFav(id, had);
   showToast(had ? "Удалено из избранного" : "Добавлено в избранное!", had ? 'info' : 'success');
   rerender();
   if (!$('detailModal').classList.contains('hidden')) openDetailModal($('detailModal').dataset.id);
 }
 async function toggleServiceFeatured(id, cur, e) {
   e?.stopPropagation?.(); if (!isAdmin) return;
-  try { await updateDoc(doc(db, 'services', id), { isFeatured: !cur }); showToast(!cur ? "Закреплено как VIP!" : "VIP-статус снят", "success"); } catch { showToast("Ошибка изменения VIP-статуса", "error"); }
+  try { await updateDoc(doc(db, 'services', id), { isFeatured: !cur, featuredUntil: null }); showToast(!cur ? "Закреплено как VIP!" : "VIP-статус снят", "success"); } catch { showToast("Ошибка изменения VIP-статуса", "error"); }
 }
 async function toggleArchive(id, e) {
   e?.stopPropagation?.();
@@ -643,7 +663,7 @@ function renderAdminPanel() {
       <div class="min-w-0 pr-2"><div class="font-semibold text-sm truncate">${esc(s.name)}</div><div class="text-tg-hint">Статус: <span class="text-amber-400 font-bold">${s.status || 'active'}</span> • @${esc(s.authorUsername)} • 👁 ${s.views || 0}</div></div>
       <div class="flex items-center gap-1 flex-shrink-0">
         ${s.status === 'pending' ? `<button onclick="approveService('${s.id}', event)" class="bg-emerald-500 text-white px-2.5 py-1 rounded-lg font-bold text-[10px]">Одобрить</button>` : ''}
-        <button onclick="toggleServiceFeatured('${s.id}', ${!!s.isFeatured}, event)" class="ibtn !w-7 !h-7 ${s.isFeatured ? '!bg-amber-400 !text-black' : ''}"><i class="fa-solid fa-star text-[10px]"></i></button>
+        <button onclick="toggleServiceFeatured('${s.id}', ${isFeat(s)}, event)" class="ibtn !w-7 !h-7 ${isFeat(s) ? '!bg-amber-400 !text-black' : ''}"><i class="fa-solid fa-star text-[10px]"></i></button>
         <button onclick="openEditModal('${s.id}', event)" class="ibtn !w-7 !h-7"><i class="fa-solid fa-pen text-[10px]"></i></button>
         <button onclick="deleteService('${s.id}', event)" class="ibtn !w-7 !h-7 !bg-red-500/10 !text-red-400"><i class="fa-solid fa-trash text-[10px]"></i></button>
       </div></div>`).join('');
@@ -673,16 +693,114 @@ function exportUsersToCSV() {
   a.download = `users_export_${Date.now()}.csv`; a.click(); showToast("Данные выгружены в CSV", "success");
 }
 
+/* ---------- Избранное в Telegram CloudStorage ---------- */
+const csOk = !!tg?.CloudStorage && !!tg.isVersionAtLeast?.('6.9'), CS_KEYS = ['fv0', 'fv1', 'fv2', 'fv3'];
+function csSaveFavs(f) {
+  if (!csOk) return;
+  const str = f.join(',');
+  CS_KEYS.forEach((k, i) => tg.CloudStorage.setItem(k, str.slice(i * 3900, (i + 1) * 3900), () => {}));
+  tg.CloudStorage.setItem('fvm', '1', () => {});
+}
+function csLoadFavs() {
+  if (!csOk) return;
+  tg.CloudStorage.getItems([...CS_KEYS, 'fvm'], (err, v) => {
+    if (err || !v) return;
+    const cloud = CS_KEYS.map(k => v[k] || '').join('').split(',').filter(Boolean);
+    const list = v.fvm ? cloud : [...new Set([...favs(), ...cloud])];
+    _favs = list; try { localStorage.setItem('sublife_favorites', JSON.stringify(list)); } catch {}
+    if (!v.fvm) csSaveFavs(list);
+    rerender();
+  });
+}
+
+/* ---------- Счётчики для статистики продавца ---------- */
+function trackContact(sid) {
+  const s = allServices.find(x => x.id === sid);
+  if (!db || !tgUser || !s || isOwner(s) || sessionStorage.getItem('c_' + sid)) return;
+  sessionStorage.setItem('c_' + sid, '1');
+  updateDoc(doc(db, 'services', sid), { contactClicks: increment(1) }).catch(() => {});
+}
+function countFav(id, had) {
+  const s = allServices.find(x => x.id === id);
+  if (!db || !tgUser || !s || isOwner(s) || (had && !(s.favCount > 0))) return;
+  updateDoc(doc(db, 'services', id), { favCount: increment(had ? -1 : 1) }).catch(() => {});
+}
+
+/* ---------- Рефералы и бонусы ---------- */
+let myInvited = 0, myClaims = [], allClaims = [], refCounts = {};
+function renderRef() {
+  const el = $('refStats'); if (!el || !tgUser) return;
+  const free = Math.floor(myInvited / REF_STEP) - myClaims.filter(c => c.status !== 'rejected').length;
+  const rest = myInvited % REF_STEP, pend = myClaims.filter(c => c.status === 'pending').length;
+  const act = allServices.filter(x => isOwner(x) && (x.status || 'active') === 'active');
+  el.innerHTML = `<div class="flex items-center justify-between text-xs"><span class="font-semibold">Вы пригласили: ${myInvited}</span><span class="text-tg-hint">${free > 0 ? 'Бонус доступен!' : `ещё ${REF_STEP - rest} до бонуса`}</span></div>
+    <div class="h-1.5 rounded-full bg-tg-bg overflow-hidden"><div class="h-full bg-tg-accent" style="width:${free > 0 ? 100 : rest / REF_STEP * 100}%"></div></div>
+    <p class="text-[11px] text-tg-hint">За каждых ${REF_STEP} приглашённых — закрепление объявления на ${BONUS_DAYS} дней.</p>
+    ${free > 0 ? (act.length ? `<div class="flex gap-2"><select id="rewardSvc" class="bg-tg-bg text-xs px-2.5 py-1.5 rounded-xl border border-white/5 flex-1 min-w-0">${act.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</select><button onclick="claimReward()" class="btn px-3 py-1.5 flex-shrink-0">Получить</button></div>` : '<p class="text-[11px] text-amber-400">Создайте активное объявление, чтобы применить бонус</p>') : ''}
+    ${pend ? `<p class="text-[11px] text-amber-400">Заявок на проверке: ${pend}</p>` : ''}`;
+}
+async function claimReward() {
+  const sid = $('rewardSvc')?.value, s = allServices.find(x => x.id === sid); if (!s || !isOwner(s)) return;
+  try { await addDoc(collection(db, 'reward_claims'), { userId: String(currentUser.id), username: currentUser.username || '', serviceId: sid, serviceName: s.name, status: 'pending', invited: myInvited, createdAt: Date.now() }); haptic('medium'); showToast("Заявка отправлена администратору", "success"); }
+  catch { showToast("Ошибка отправки заявки", "error"); }
+}
+function renderClaims() {
+  const list = allClaims.filter(c => c.status === 'pending');
+  $('adminClaimsContainer').classList.toggle('hidden', !list.length);
+  $('claimsBadge').textContent = list.length;
+  $('adminClaimsList').innerHTML = list.map(c => `<div class="bg-tg-bg/80 p-2.5 rounded-xl border border-amber-400/20 text-xs flex items-center justify-between gap-2">
+    <div class="min-w-0"><span class="font-bold text-amber-400">@${esc(c.username || c.userId)}</span> · приглашено ${refCounts[c.userId] || 0}<div class="text-[10px] text-tg-hint truncate">${esc(c.serviceName)}</div></div>
+    <div class="flex gap-1 flex-shrink-0"><button onclick="resolveClaim('${safe(c.id)}', true, event)" class="bg-emerald-500 text-white px-2 py-1 rounded-lg text-[10px]">Одобрить</button>
+    <button onclick="resolveClaim('${safe(c.id)}', false, event)" class="bg-tg-card text-tg-hint px-2 py-1 rounded-lg text-[10px]">Отклонить</button></div></div>`).join('');
+}
+async function resolveClaim(id, ok, e) {
+  e?.stopPropagation?.(); const c = allClaims.find(x => x.id === id); if (!isAdmin || !c) return;
+  try {
+    if (ok) await updateDoc(doc(db, 'services', c.serviceId), { isFeatured: true, featuredUntil: Date.now() + BONUS_DAYS * 864e5 });
+    await updateDoc(doc(db, 'reward_claims', id), { status: ok ? 'approved' : 'rejected' });
+    showToast(ok ? "Бонус применён" : "Заявка отклонена", "success");
+  } catch { showToast("Ошибка", "error"); }
+}
+
+/* ---------- Рейтинг и ссылка на профиль продавца ---------- */
+async function loadSellerExtra(sid, all) {
+  const fmt = n => new Date(n).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  const first = Math.min(...all.map(x => x.createdAt || Infinity));
+  let label = isFinite(first) ? `Первое объявление: ${fmt(first)}` : '', rs = [];
+  try {
+    const pr = await getDoc(doc(db, 'profiles', sid)); if (pr.exists() && pr.data().joinedAt) label = `В клубе с ${fmt(pr.data().joinedAt)}`;
+    rs = (await getDocs(query(collection(db, 'ratings'), where('sellerId', '==', sid)))).docs.map(d => d.data());
+  } catch {}
+  if ($('sellerContent').dataset.sid !== sid || !$('sellerMeta')) return;
+  const avg = rs.length ? rs.reduce((a, r) => a + r.value, 0) / rs.length : 0;
+  const mine = rs.find(r => r.raterId === String(currentUser.id))?.value || 0;
+  $('sellerMeta').innerHTML = `${label}${rs.length ? ` · <span class="text-amber-400"><i class="fa-solid fa-star"></i> ${avg.toFixed(1)}</span> (${rs.length})` : ' · Пока без оценок'}`;
+  if (tgUser && sid !== String(currentUser.id)) $('sellerRate').innerHTML = `<div class="flex items-center justify-between card p-3 mb-3 text-xs"><span class="text-tg-hint">Ваша оценка</span><div class="flex gap-1.5">${[1, 2, 3, 4, 5].map(n => `<button onclick="rateSeller('${safe(sid)}', ${n})" class="text-lg ${n <= mine ? 'text-amber-400' : 'text-tg-hint'}"><i class="fa-${n <= mine ? 'solid' : 'regular'} fa-star"></i></button>`).join('')}</div></div>`;
+}
+async function rateSeller(sid, v) {
+  if (needTg()) return;
+  try {
+    await setDoc(doc(db, 'ratings', `${sid}_${currentUser.id}`), { sellerId: sid, raterId: String(currentUser.id), value: v, createdAt: Date.now() });
+    haptic(); showToast("Спасибо за оценку!", "success"); loadSellerExtra(sid, allServices.filter(x => String(x.authorId) === sid));
+  } catch { showToast("Не удалось сохранить оценку", "error"); }
+}
+function shareSeller(sid) {
+  const link = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${sid}` : `https://t.me/${BOT_USERNAME}?startapp=seller_${sid}`;
+  const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Посмотри профиль продавца в нашем маркетплейсе!')}`;
+  tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, '_blank');
+}
+
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
-  exportUsersToCSV, filterServices, renderCatalog });
+  exportUsersToCSV, filterServices, renderCatalog, claimReward, resolveClaim, rateSeller, shareSeller });
 
 /* ---------- Firebase sync ---------- */
 function openDeepLink() {
   const p = tg?.initDataUnsafe?.start_param || '';
-  if (deepLinkDone || !p.startsWith('service_')) return;
-  const id = p.slice(8); if (allServices.some(s => s.id === id)) { deepLinkDone = true; openDetailModal(id); }
+  if (deepLinkDone) return;
+  if (p.startsWith('service_')) { const id = p.slice(8); if (allServices.some(x => x.id === id)) { deepLinkDone = true; openDetailModal(id); } }
+  else if (p.startsWith('seller_')) { const x = allServices.find(v => String(v.authorId) === p.slice(7) && v.authorUsername); if (x) { deepLinkDone = true; openSellerModal(x.authorUsername); } }
 }
 
 const syncedV = new Set();
@@ -714,6 +832,10 @@ async function initRealtimeSync() {
       const extra = (!snap.exists() && sp.startsWith('ref_')) ? { referredBy: sp.slice(4), joinedAt: Date.now() } : (!snap.exists() ? { joinedAt: Date.now() } : {});
       await setDoc(userRef, { id: currentUser.id, name: currentUser.first_name || 'Без имени', username: currentUser.username || 'unknown', photo_url: currentUser.photo_url || '',
         launchesCount: increment(1), lastSeen: Date.now(), ...extra }, { merge: true });
+      if (!snap.exists() && /^ref_\d+$/.test(sp) && sp.slice(4) !== String(currentUser.id))
+        setDoc(doc(db, 'referrals', String(currentUser.id)), { referrerId: sp.slice(4), createdAt: Date.now() }).catch(() => {});
+      const pr = doc(db, 'profiles', String(currentUser.id)), ps = await getDoc(pr);
+      await setDoc(pr, { username: currentUser.username || '', name: currentUser.first_name || '', ...(ps.exists() ? {} : { joinedAt: snap.data()?.joinedAt || Date.now() }) }, { merge: true });
     } catch (e) { console.warn(e); }
   }
 
@@ -726,6 +848,11 @@ async function initRealtimeSync() {
     rerender(); openDeepLink(); syncVerified();
   }, err => { console.error(err); $('servicesList').innerHTML = '<p class="text-center text-sm text-red-400 py-10">Не удалось загрузить объявления</p>'; });
 
+  if (tgUser) {
+    const uid = String(currentUser.id);
+    onSnapshot(query(collection(db, 'referrals'), where('referrerId', '==', uid)), x => { myInvited = x.size; renderRef(); }, () => {});
+    onSnapshot(query(collection(db, 'reward_claims'), where('userId', '==', uid)), x => { myClaims = x.docs.map(d => d.data()); renderRef(); }, () => {});
+  }
   if (tgUser) onSnapshot(doc(db, 'app_users', String(currentUser.id)), d => {
     me = d.exists() ? d.data() : null;
     const b = badge(me?.isVerified); $('userBadgeHeader').innerHTML = b; $('userBadgeProfile').innerHTML = b; rerender(); syncVerified();
@@ -733,11 +860,14 @@ async function initRealtimeSync() {
 
   if (isAdmin) {
     onSnapshot(collection(db, 'app_users'), snap => { allUsers = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); syncVerified(); });
+    onSnapshot(collection(db, 'referrals'), x => { refCounts = {}; x.docs.forEach(d => { const r = d.data().referrerId; refCounts[r] = (refCounts[r] || 0) + 1; }); renderClaims(); });
+    onSnapshot(collection(db, 'reward_claims'), x => { allClaims = x.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); renderClaims(); });
     onSnapshot(collection(db, 'reports'), snap => { globalReports = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); });
   }
 }
 
 switchTab('catalog');
+csLoadFavs();
 initRealtimeSync();
 </script>
 </body>
