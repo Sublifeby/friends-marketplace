@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>Маркетплейс для своих</title>
-<link rel="manifest" href='data:application/manifest+json,{"name":"Маркетплейс для своих","short_name":"Friends Market","start_url":".","display":"standalone","background_color":"#18222d","theme_color":"#18222d"}'>
 <meta name="theme-color" content="#18222d">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
@@ -220,12 +220,15 @@ const $ = id => document.getElementById(id);
 let zTop = 50; const front = id => { $(id).style.zIndex = ++zTop; };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const W = o => Object.assign(window, o);
+const safe = v => String(v ?? '').replace(/[^\w-]/g, '');          // для значений внутри onclick
+const okId = d => /^[\w-]+$/.test(d.id);                          // отсекаем документы с «странными» id
+const haptic = (t = 'light') => window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(t);
 
 let db, storage, app;
 try { app = initializeApp(firebaseConfig); db = getFirestore(app); storage = getStorage(app); } catch (e) { console.error(e); }
 
 const tg = window.Telegram?.WebApp;
-if (tg) { tg.expand(); tg.ready(); }
+if (tg) { tg.expand(); tg.ready(); tg.disableVerticalSwipes?.(); tg.setHeaderColor?.('bg_color'); }
 const tgUser = tg?.initDataUnsafe?.user || null;
 const currentUser = tgUser || { id: 0, first_name: "Гость", username: "", photo_url: "" };
 const uname = (currentUser.username || "").toLowerCase();
@@ -250,7 +253,7 @@ $('profileBigUsername').textContent = currentUser.username ? '@' + currentUser.u
 if (currentUser.photo_url) $('userAvatar').innerHTML = $('profileBigAvatar').innerHTML = `<img src="${esc(currentUser.photo_url)}" class="w-full h-full object-cover">`;
 
 const refCode = currentUser.username || currentUser.id;
-const myReferralLink = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${refCode}` : `https://t.me/${BOT_USERNAME}?start=ref_${refCode}`;
+const myReferralLink = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ref_${refCode}` : `https://t.me/${BOT_USERNAME}?startapp=ref_${refCode}`;
 $('referralLinkInput').value = myReferralLink;
 
 /* ---------- Состояние ---------- */
@@ -273,7 +276,10 @@ renderChips();
 
 /* ---------- Навигация ---------- */
 const anyOverlay = () => ['detailModal','sellerModal','serviceModal'].some(id => !$(id).classList.contains('hidden'));
-function updateBack() { if (tg?.BackButton) (anyOverlay() || activeTab !== 'catalog') ? tg.BackButton.show() : tg.BackButton.hide(); }
+function updateBack() {
+  document.body.style.overflow = anyOverlay() ? 'hidden' : '';
+  if (tg?.BackButton) (anyOverlay() || activeTab !== 'catalog') ? tg.BackButton.show() : tg.BackButton.hide();
+}
 function handleBack() {
   const closers = { serviceModal: closeModal, detailModal: closeDetailModal, sellerModal: closeSellerModal };
   const open = Object.keys(closers).filter(id => !$(id).classList.contains('hidden'))
@@ -295,7 +301,8 @@ function switchTab(tab) {
 }
 
 /* ---------- Утилиты ---------- */
-const favs = () => { try { return JSON.parse(localStorage.getItem('sublife_favorites') || '[]'); } catch { return []; } };
+let _favs = null;
+const favs = () => _favs ??= (() => { try { return JSON.parse(localStorage.getItem('sublife_favorites') || '[]'); } catch { return []; } })();
 const viewedKey = () => 'sublife_viewed_' + currentUser.id;
 const viewed = () => { try { return JSON.parse(localStorage.getItem(viewedKey()) || '[]'); } catch { return []; } };
 const parsePrice = s => { const n = parseInt(String(s || '').replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; };
@@ -318,7 +325,7 @@ document.addEventListener('click', e => {
 function renderCard(s) {
   const imgs = imgsOf(s), isFav = favs().includes(s.id), feat = !!s.isFeatured, st = s.status || 'active';
   const manage = isOwner(s) || isAdmin, arch = st === 'archived';
-  const u = esc(s.authorUsername || '');
+  const u = safe(s.authorUsername);
   return `<div onclick="openDetailModal('${s.id}')" class="card overflow-hidden relative cursor-pointer active:scale-[0.99] transition-all ${feat ? '!border-amber-400/50 shadow-lg shadow-amber-400/10' : ''}">
     ${feat ? '<div class="vip"><i class="fa-solid fa-crown mr-1"></i>VIP</div>' : ''}
     ${arch ? `<div class="absolute top-3 ${feat ? 'left-20' : 'left-3'} z-10 bg-black/70 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">Продано / В архиве</div>` : ''}
@@ -392,7 +399,7 @@ function setGalleryImg(i) { const el = $('activeGalleryImg'); if (el && detailIm
 function openDetailModal(id) {
   const s = allServices.find(x => x.id === id); if (!s) return;
   $('detailModal').dataset.id = id;
-  const owner = isOwner(s), manage = owner || isAdmin, feat = !!s.isFeatured, isFav = favs().includes(id), u = esc(s.authorUsername || '');
+  const owner = isOwner(s), manage = owner || isAdmin, feat = !!s.isFeatured, isFav = favs().includes(id), u = safe(s.authorUsername);
   detailImgs = imgsOf(s);
 
   if (!sessionStorage.getItem('v_' + id)) {
@@ -462,7 +469,7 @@ function openSellerModal(username, e) {
       <div class="flex items-center gap-2 min-w-0"><h3 class="font-bold text-base truncate">@${esc(username)}</h3>${badge(verified)}</div>
       <button onclick="closeSellerModal()" class="ibtn !w-8 !h-8 !rounded-full !bg-tg-card"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <button onclick="openContact('${esc(username)}', event)" class="btn w-full py-2.5 mb-3"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
+    <button onclick="openContact('${safe(username)}', event)" class="btn w-full py-2.5 mb-3"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
     <div class="space-y-3">${list.length ? list.map(renderCard).join('') : '<p class="text-xs text-tg-hint text-center py-6">Нет активных объявлений</p>'}</div>`;
   $('sellerModal').classList.remove('hidden'); front('sellerModal'); updateBack();
 }
@@ -491,7 +498,7 @@ function toggleFavorite(id, e) {
   e?.stopPropagation?.();
   let f = favs(); const had = f.includes(id);
   f = had ? f.filter(x => x !== id) : [...f, id];
-  localStorage.setItem('sublife_favorites', JSON.stringify(f));
+  localStorage.setItem('sublife_favorites', JSON.stringify(f)); _favs = f; haptic();
   showToast(had ? "Удалено из избранного" : "Добавлено в избранное!", had ? 'info' : 'success');
   rerender();
   if (!$('detailModal').classList.contains('hidden')) openDetailModal($('detailModal').dataset.id);
@@ -503,8 +510,9 @@ async function toggleServiceFeatured(id, cur, e) {
 async function toggleArchive(id, e) {
   e?.stopPropagation?.();
   const s = allServices.find(x => x.id === id); if (!s || !(isOwner(s) || isAdmin)) return;
-  const next = (s.status || 'active') === 'archived' ? 'active' : 'archived';
-  try { await updateDoc(doc(db, 'services', id), { status: next }); showToast(next === 'archived' ? "Перенесено в архив" : "Возвращено в каталог", "success"); } catch { showToast("Ошибка", "error"); }
+  const modOn = globalSettings.preModeration && !isAdmin;
+  const next = (s.status || 'active') === 'archived' ? (modOn ? 'pending' : 'active') : 'archived';
+  try { await updateDoc(doc(db, 'services', id), { status: next }); showToast(next === 'archived' ? "Перенесено в архив" : (next === 'pending' ? "Отправлено на модерацию" : "Возвращено в каталог"), "success"); } catch { showToast("Ошибка", "error"); }
 }
 async function approveService(id, e) { e?.stopPropagation?.(); try { await updateDoc(doc(db, 'services', id), { status: 'active' }); showToast("Объявление одобрено!", "success"); } catch { showToast("Ошибка", "error"); } }
 function deleteService(id, e) {
@@ -553,17 +561,16 @@ async function handleMultiImagesUpload(e) {
 }
 async function uploadImg(src) {
   if (!src.startsWith('data:')) return src;
-  try {
-    const r = ref(storage, `services/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`);
-    await uploadString(r, src, 'data_url'); return await getDownloadURL(r);
-  } catch (err) { console.warn("Storage upload failed, saving inline:", err); return src; }
+  const r = ref(storage, `services/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`);
+  await uploadString(r, src, 'data_url', { cacheControl: 'public,max-age=31536000' });
+  return await getDownloadURL(r);
 }
 function openAddModal() {
   if (needTg()) return;
   if (!currentUser.username) return showToast("Задайте username в настройках Telegram, чтобы с вами могли связаться", "error");
   photos = []; $('serviceForm').reset(); renderPhotos();
   $('modalTitle').textContent = "Новое объявление"; $('editServiceId').value = ""; $('customCityContainer').classList.add('hidden');
-  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack();
+  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack(); tg?.enableClosingConfirmation?.();
 }
 function openEditModal(id, e) {
   e?.stopPropagation?.();
@@ -578,9 +585,9 @@ function openEditModal(id, e) {
   $('serviceShortDesc').value = s.shortDesc || s.desc || ''; $('serviceDesc').value = s.desc || '';
   $('serviceTags').value = (s.tags || []).map(t => t.replace('#', '')).join(', ');
   photos = [...imgsOf(s)]; renderPhotos();
-  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack();
+  $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack(); tg?.enableClosingConfirmation?.();
 }
-function closeModal() { $('serviceModal').classList.add('hidden'); updateBack(); }
+function closeModal() { $('serviceModal').classList.add('hidden'); updateBack(); tg?.disableClosingConfirmation?.(); }
 
 async function saveService(e) {
   e.preventDefault(); if (needTg()) return;
@@ -604,7 +611,7 @@ async function saveService(e) {
     if (ex) await updateDoc(doc(db, 'services', id), data);
     else await addDoc(collection(db, 'services'), { ...data, views: 0, authorId: currentUser.id, authorName: currentUser.first_name || '', authorUsername: currentUser.username,
       authorAvatar: currentUser.photo_url || '', authorVerified: !!me?.isVerified, createdAt: Date.now(), isFeatured: false });
-    showToast(pending ? "Отправлено на модерацию" : "Успешно сохранено!", "success"); closeModal();
+    showToast(pending ? "Отправлено на модерацию" : "Успешно сохранено!", "success"); haptic('medium'); closeModal();
   } catch (err) { showToast("Ошибка сохранения: " + err.message, "error"); }
   finally { btn.disabled = false; btn.firstElementChild.textContent = "Опубликовать"; }
 }
@@ -629,7 +636,7 @@ function renderAdminPanel() {
 
   $('adminUsersList').innerHTML = allUsers.map(u => `<div class="flex items-center justify-between bg-tg-bg/50 px-3 py-2 rounded-xl text-xs">
     <div class="flex items-center gap-2 min-w-0 pr-2"><span class="font-medium truncate">@${esc(u.username || u.name)}</span>${badge(u.isVerified)}</div>
-    <button onclick="setUserVerifiedStatus('${esc(u.id)}', ${!u.isVerified}, event)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${u.isVerified ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">${u.isVerified ? 'Снять Verified' : 'Дать Verified'}</button></div>`).join('');
+    <button onclick="setUserVerifiedStatus('${safe(u.id)}', ${!u.isVerified}, event)" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${u.isVerified ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/20 text-emerald-400'}">${u.isVerified ? 'Снять Verified' : 'Дать Verified'}</button></div>`).join('');
 
   $('adminServicesList').innerHTML = allServices.filter(s => adminFilter === 'all' || (s.status || 'active') === adminFilter).map(s => `
     <div class="card p-3 flex items-center justify-between text-xs">
@@ -714,7 +721,7 @@ async function initRealtimeSync() {
   onSnapshot(doc(db, 'app_settings', 'config'), d => { if (d.exists()) { globalSettings = d.data(); const t = $('moderationToggle'); if (t) t.checked = !!globalSettings.preModeration; } }, () => {});
 
   onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(200)), snap => {
-    allServices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() }));
     $('totalOffersCount').textContent = allServices.filter(s => (s.status || 'active') === 'active').length;
     rerender(); openDeepLink(); syncVerified();
   }, err => { console.error(err); $('servicesList').innerHTML = '<p class="text-center text-sm text-red-400 py-10">Не удалось загрузить объявления</p>'; });
@@ -725,8 +732,8 @@ async function initRealtimeSync() {
   }, () => {});
 
   if (isAdmin) {
-    onSnapshot(collection(db, 'app_users'), snap => { allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); syncVerified(); });
-    onSnapshot(collection(db, 'reports'), snap => { globalReports = snap.docs.map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); });
+    onSnapshot(collection(db, 'app_users'), snap => { allUsers = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); syncVerified(); });
+    onSnapshot(collection(db, 'reports'), snap => { globalReports = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); renderAdminPanel(); });
   }
 }
 
