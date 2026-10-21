@@ -264,7 +264,7 @@ const myReferralLink = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHOR
 $('referralLinkInput').value = myReferralLink;
 
 /* ---------- Состояние ---------- */
-let allServices = [], allUsers = [], globalReports = [], me = null;
+let allServices = [], allUsers = [], globalReports = [], me = null, servicesLoaded = false;
 let globalSettings = { preModeration: false }, globalStats = { totalLaunches: 0 };
 let currentCategory = 'all', adminFilter = 'all', activeTab = 'catalog', photos = [], detailImgs = [], deepLinkDone = false;
 
@@ -370,6 +370,7 @@ function renderCard(s) {
 
 /* ---------- Каталог ---------- */
 function renderCatalog() {
+  if (!servicesLoaded) return;
   const q = $('searchInput').value.toLowerCase().trim(), city = $('citySelect').value;
   const min = parseInt($('minPriceInput').value, 10) || 0, max = parseInt($('maxPriceInput').value, 10) || Infinity, sort = $('sortSelect').value;
   const fv = favs(), rv = viewed();
@@ -395,6 +396,7 @@ function renderCatalog() {
     '<div class="text-center py-16 space-y-2"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid fa-box-open"></i></div><p class="text-sm font-medium">Нет объявлений по данному запросу</p></div>';
 }
 function renderMyServices() {
+  if (!servicesLoaded) return;
   const mine = allServices.filter(isOwner);
   const sum = k => mine.reduce((a, x) => a + (x[k] || 0), 0);
   $('myStats').innerHTML = mine.length ? `<div class="grid grid-cols-3 gap-2 mb-3">${[['fa-eye','Просмотры','views'],['fa-paper-plane','Обращения','contactClicks'],['fa-star','В избранном','favCount']].map(([i, l, k]) => `<div class="card p-3 text-center"><div class="text-lg font-bold">${sum(k)}</div><div class="text-[10px] text-tg-hint"><i class="fa-solid ${i} mr-1"></i>${l}</div></div>`).join('')}</div>` : '';
@@ -843,7 +845,7 @@ async function initRealtimeSync() {
   onSnapshot(doc(db, 'app_settings', 'config'), d => { if (d.exists()) { globalSettings = d.data(); const t = $('moderationToggle'); if (t) t.checked = !!globalSettings.preModeration; } }, () => {});
 
   onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(200)), snap => {
-    allServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() }));
+    allServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); servicesLoaded = true;
     $('totalOffersCount').textContent = allServices.filter(s => (s.status || 'active') === 'active').length;
     rerender(); openDeepLink(); syncVerified();
   }, err => { console.error(err); $('servicesList').innerHTML = '<p class="text-center text-sm text-red-400 py-10">Не удалось загрузить объявления</p>'; });
