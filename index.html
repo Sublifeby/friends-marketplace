@@ -89,6 +89,56 @@ nav button span{font-size:.68rem!important}
 #serviceForm label{font-weight:600;letter-spacing:.01em}
 #photosPreviewGrid img{border-radius:.7rem}
 @media(min-width:640px){#servicesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}#servicesList>*{margin-top:0!important}#servicesList>.card{height:100%;display:flex;flex-direction:column}#servicesList>.card>.service-media{flex-shrink:0}#servicesList>.card>.p-4{display:flex;flex:1;flex-direction:column}#servicesList>.card>.p-4>.border-t{margin-top:auto}#servicesList>div:not(.card){grid-column:1/-1}}
+/* Каталог v2: компактный поиск, быстрые категории и выразительные карточки */
+.catalog-search-row{gap:.55rem}
+#searchInput{min-height:2.65rem;font-size:.84rem;padding-top:.65rem;padding-bottom:.65rem}
+.search-clear{position:absolute;right:.55rem;top:50%;transform:translateY(-50%);width:1.7rem;height:1.7rem;border-radius:.6rem;color:var(--c-hint);display:grid;place-items:center}
+.search-clear.hidden{display:none}
+.city-select{width:104px;min-height:2.65rem;padding:.45rem .5rem;font-size:.72rem}
+.catalog-filter-line{min-height:2.15rem}
+.filter-toggle{font-size:.76rem;font-weight:700;color:var(--c-text);padding:.48rem .7rem;border:1px solid var(--ui-line);border-radius:.8rem;background:var(--c-card)}
+.filter-count{margin-left:.2rem;padding:.08rem .38rem;border-radius:999px;background:var(--sublife-teal);color:#062b2a;font-size:.65rem}
+.sort-select{max-width:148px;min-height:2.25rem;font-size:.72rem;padding:.35rem .55rem}
+.reset-filters{font-size:.72rem;color:var(--sublife-teal);font-weight:650;padding:.4rem}
+.catalog-advanced{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;padding:.7rem;background:color-mix(in srgb,var(--c-card) 72%,transparent);border:1px solid var(--ui-line);border-radius:1rem}
+.catalog-advanced.hidden{display:none}
+.catalog-advanced .sm-inp{width:100%;min-height:2.5rem;font-size:.78rem}
+#categoryChips{margin:0 -.15rem;padding:.15rem .15rem .4rem}
+#categoryChips .chip{padding:.48rem .78rem;font-size:.74rem;background:color-mix(in srgb,var(--c-card) 90%,transparent)}
+#categoryChips .chip-on{background:var(--sublife-teal);color:#062b2a;box-shadow:0 4px 14px rgba(36,199,183,.18)}
+#quickTags{margin-top:-.15rem}
+#quickTags .tagbtn{border-radius:999px;padding:.28rem .62rem;font-size:.68rem;background:transparent;border-color:var(--ui-line);color:var(--c-hint)}
+#servicesList>.card{overflow:hidden;border-radius:1.15rem}
+#servicesList .service-media{height:clamp(142px,43vw,205px)}
+#servicesList .service-media:after{content:"";position:absolute;inset:auto 0 0;height:38%;background:linear-gradient(transparent,rgba(0,0,0,.2));pointer-events:none}
+#servicesList .service-media img{background:var(--c-card)}
+#servicesList .vip{top:.65rem;left:.65rem}
+#servicesList .p-4{gap:.8rem}
+#servicesList .p-4>.flex.items-start.justify-between{gap:.6rem}
+#servicesList .p-4>.flex.items-start.justify-between>div:last-child{background:rgba(36,199,183,.09);border:1px solid rgba(36,199,183,.14);border-radius:.8rem;padding:.42rem .55rem;max-width:42%}
+#servicesList .p-4>.flex.items-start.justify-between>div:last-child>div:first-child{color:var(--sublife-teal);font-size:.9rem}
+#servicesList .p-4>.flex.items-start.justify-between>div:last-child>div:nth-child(2){font-size:.68rem}
+#servicesList .border-t{padding-top:.75rem}
+#servicesList .border-t .btn{min-height:2.2rem;padding:.45rem .7rem;font-size:.7rem}
+.profile-hero{background:linear-gradient(120deg,color-mix(in srgb,var(--c-card) 92%,var(--sublife-teal)),var(--c-card));border-color:rgba(36,199,183,.2);box-shadow:0 12px 30px rgba(0,0,0,.09)}
+#profileBigAvatar{width:4rem;height:4rem;border:2px solid rgba(36,199,183,.55);box-shadow:0 0 0 4px rgba(36,199,183,.09)}
+#profileBigName{font-size:1.02rem;letter-spacing:-.02em}
+.referral-panel{background:linear-gradient(135deg,rgba(36,199,183,.14),rgba(22,132,199,.08) 70%,rgba(255,147,79,.08));border:1px solid rgba(36,199,183,.2)}
+#referralLinkInput{min-width:0;font-size:.72rem}
+#tabProfile h3{letter-spacing:-.015em}
+#myStats>.grid>div{border-radius:1rem;border-color:var(--ui-line);background:color-mix(in srgb,var(--c-card) 88%,transparent)}
+.service-sheet{padding-bottom:calc(1.25rem + env(safe-area-inset-bottom));}
+.form-heading{position:sticky;top:-1px;z-index:5;background:var(--c-bg);padding-top:.25rem}
+.form-eyebrow{font-size:.6rem;letter-spacing:.16em;color:var(--sublife-teal);font-weight:800;margin-bottom:.15rem}
+#serviceForm{gap:1rem}
+#serviceForm>div{padding:.8rem;background:color-mix(in srgb,var(--c-card) 52%,transparent);border:1px solid var(--ui-line);border-radius:1rem}
+#serviceForm label{display:block;font-size:.72rem;margin-bottom:.4rem;color:var(--c-hint)}
+#serviceForm .inp{background:var(--c-bg);min-height:2.75rem}
+#serviceForm textarea.inp{min-height:6rem}
+#serviceForm #photosPreviewGrid img{aspect-ratio:1;object-fit:cover}
+#submitBtn{position:sticky;bottom:0;z-index:4;min-height:3rem;background:linear-gradient(120deg,var(--sublife-teal),#1684c7);color:#062b2a;box-shadow:0 8px 24px rgba(36,199,183,.2)}
+@media(min-width:640px){.city-select{width:125px}#servicesList .service-media{height:190px}}
+@media(max-width:360px){.city-select{width:88px}.sort-select{max-width:128px}.catalog-advanced{gap:.4rem}#servicesList .p-4{padding:.8rem}#servicesList .border-t .btn{padding:.4rem .55rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 </style>
@@ -111,22 +161,25 @@ nav button span{font-size:.68rem!important}
   <!-- Каталог -->
   <section id="tabCatalog" class="space-y-4">
     <div class="space-y-2.5">
-      <div class="flex space-x-2">
-        <div class="relative flex-1">
+      <div class="catalog-search-row flex items-center gap-2">
+        <div class="relative flex-1 min-w-0">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
-          <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, тегов..." class="inp !pl-10">
+          <input type="search" id="searchInput" oninput="filterServices()" placeholder="Найти среди предложений…" aria-label="Поиск по объявлениям" class="inp !pl-10 !pr-10">
+          <button type="button" id="clearSearchBtn" onclick="clearCatalogSearch()" aria-label="Очистить поиск" class="search-clear hidden"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <select id="citySelect" onchange="renderCatalog()" class="sm-inp max-w-[110px] truncate"></select>
+        <select id="citySelect" onchange="renderCatalog()" aria-label="Фильтр по городу" class="sm-inp city-select truncate"></select>
       </div>
-      <div class="grid grid-cols-3 gap-2">
-        <input type="number" id="minPriceInput" oninput="filterServices()" placeholder="Цена от" class="sm-inp">
-        <input type="number" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до" class="sm-inp">
-        <select id="sortSelect" onchange="renderCatalog()" class="sm-inp">
-          <option value="newest">Новые</option><option value="price_asc">Дешевле</option><option value="price_desc">Дороже</option>
-        </select>
+      <div class="catalog-filter-line flex items-center justify-between gap-2">
+        <button type="button" id="toggleFiltersBtn" onclick="toggleCatalogFilters()" class="filter-toggle"><i class="fa-solid fa-sliders mr-1.5"></i>Фильтры <span id="activeFilterCount" class="filter-count hidden">0</span></button>
+        <select id="sortSelect" onchange="renderCatalog()" aria-label="Сортировка объявлений" class="sm-inp sort-select"><option value="newest">Сначала новые</option><option value="price_asc">Сначала дешевле</option><option value="price_desc">Сначала дороже</option></select>
+        <button type="button" id="resetFiltersBtn" onclick="resetCatalogFilters()" class="reset-filters hidden">Сбросить</button>
       </div>
-      <div id="quickTags" class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5"></div>
-      <div id="categoryChips" class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1"></div>
+      <div id="catalogAdvancedFilters" class="catalog-advanced hidden">
+        <input type="number" id="minPriceInput" oninput="filterServices()" min="0" placeholder="Цена от, BYN" aria-label="Минимальная цена" class="sm-inp">
+        <input type="number" id="maxPriceInput" oninput="filterServices()" min="0" placeholder="Цена до, BYN" aria-label="Максимальная цена" class="sm-inp">
+      </div>
+      <div id="categoryChips" aria-label="Категории объявлений" class="flex gap-2 overflow-x-auto hide-scrollbar pb-1"></div>
+      <div id="quickTags" aria-label="Популярные теги" class="flex gap-1.5 overflow-x-auto hide-scrollbar pb-0.5"></div>
     </div>
     <div class="card p-3.5 flex items-center justify-between text-xs">
       <div class="flex items-center space-x-2">
@@ -140,14 +193,14 @@ nav button span{font-size:.68rem!important}
 
   <!-- Профиль -->
   <section id="tabProfile" class="space-y-4 hidden">
-    <div class="card p-4 flex items-center space-x-3">
+    <div class="profile-hero card p-4 flex items-center space-x-3">
       <div id="profileBigAvatar" class="w-14 h-14 rounded-full bg-tg-button flex items-center justify-center font-bold text-xl text-tg-buttonText overflow-hidden flex-shrink-0"><i class="fa-solid fa-user"></i></div>
       <div class="min-w-0">
         <div class="flex items-center space-x-1.5"><h2 id="profileBigName" class="font-bold text-base truncate">Загрузка...</h2><span id="userBadgeProfile"></span></div>
         <p id="profileBigUsername" class="text-xs text-tg-hint"></p>
       </div>
     </div>
-    <div class="bg-gradient-to-br from-tg-card to-tg-button/10 rounded-2xl p-4 border border-tg-accent/20 space-y-3">
+    <div class="referral-panel rounded-2xl p-4 space-y-3">
       <div class="flex items-center space-x-2">
         <div class="w-8 h-8 rounded-xl bg-tg-accent/20 text-tg-accent flex items-center justify-center"><i class="fa-solid fa-user-plus"></i></div>
         <div><h3 class="font-bold text-sm">Пригласить друзей</h3><p class="text-[11px] text-tg-hint">Приглашайте друзей и получайте бонусы</p></div>
@@ -218,9 +271,9 @@ nav button span{font-size:.68rem!important}
 <div id="detailModal" class="modal hidden"><div class="sheet hide-scrollbar"><div id="detailContent"></div></div></div>
 
 <div id="serviceModal" class="modal !bg-black/70 hidden">
-  <div class="sheet p-5 space-y-4">
-    <div class="flex items-center justify-between pb-2 border-b border-white/5">
-      <h3 id="modalTitle" class="font-bold text-base">Новое объявление</h3>
+  <div class="sheet service-sheet p-5 space-y-4">
+    <div class="form-heading flex items-center justify-between pb-2 border-b border-white/5">
+      <div><p class="form-eyebrow">КЛУБ SUBLIFE</p><h3 id="modalTitle" class="font-bold text-base">Новое объявление</h3></div>
       <button onclick="closeModal()" class="ibtn !w-8 !h-8 !rounded-full !bg-tg-card"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="serviceForm" onsubmit="saveService(event)" class="space-y-3.5">
@@ -329,9 +382,30 @@ $('serviceCategory').innerHTML = Object.entries(CATS).map(([k, v]) => `<option v
 $('quickTags').innerHTML = TAGS.map(t => `<button onclick="setSearchTag('#${t}')" class="tagbtn">#${t}</button>`).join('');
 $('presetTags').innerHTML = '<span class="text-[10px] text-tg-hint mr-1">Быстрый выбор:</span>' + TAGS.map(t => `<button type="button" onclick="appendTagPreset('${t}')" class="tagbtn !text-[10px] !px-2 !py-0.5">+${t}</button>`).join('');
 
+function toggleCatalogFilters(force) {
+  const panel = $('catalogAdvancedFilters');
+  const open = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !open);
+  $('toggleFiltersBtn').setAttribute('aria-expanded', String(open));
+  if (open) $('minPriceInput').focus({ preventScroll: true });
+}
+function clearSearchButton() { $('clearSearchBtn').classList.toggle('hidden', !$('searchInput').value); }
+function clearCatalogSearch() { $('searchInput').value = ''; clearSearchButton(); renderCatalog(); $('searchInput').focus(); }
+function resetCatalogFilters() {
+  $('searchInput').value = ''; $('citySelect').value = 'all'; $('minPriceInput').value = ''; $('maxPriceInput').value = ''; $('sortSelect').value = 'newest';
+  currentCategory = 'all'; displayLimit = 30; clearSearchButton(); renderChips(); toggleCatalogFilters(false); renderCatalog(); haptic();
+}
+function updateCatalogFilterState() {
+  const count = Number(!!$('minPriceInput').value) + Number(!!$('maxPriceInput').value) + Number($('citySelect').value !== 'all');
+  $('activeFilterCount').textContent = count; $('activeFilterCount').classList.toggle('hidden', !count);
+  $('resetFiltersBtn').classList.toggle('hidden', !(count || $('searchInput').value || currentCategory !== 'all' || $('sortSelect').value !== 'newest'));
+  clearSearchButton();
+}
+
 function renderChips() {
-  const items = [['all','Все'],['favorites','<i class="fa-solid fa-star mr-1"></i>Избранное'],['recently_viewed','<i class="fa-solid fa-clock-rotate-left mr-1"></i>Вы смотрели'], ...Object.entries(CATS)];
-  $('categoryChips').innerHTML = items.map(([k, l]) => `<button onclick="selectCategory('${k}')" class="chip ${k === currentCategory ? 'chip-on' : ''}">${l}</button>`).join('');
+  const items = [['all','<i class="fa-solid fa-compass mr-1"></i>Все'],['favorites','<i class="fa-solid fa-star mr-1"></i>Избранное'],['recently_viewed','<i class="fa-solid fa-clock-rotate-left mr-1"></i>Недавние'],['services','<i class="fa-solid fa-handshake mr-1"></i>Услуги'],['goods','<i class="fa-solid fa-box-open mr-1"></i>Товары'],['realestate','<i class="fa-solid fa-house mr-1"></i>Недвижимость'],['auto','<i class="fa-solid fa-car mr-1"></i>Авто'],['other','<i class="fa-solid fa-ellipsis mr-1"></i>Разное']];
+  $('categoryChips').innerHTML = items.map(([k, l]) => `<button type="button" aria-pressed="${k === currentCategory}" onclick="selectCategory('${k}')" class="chip ${k === currentCategory ? 'chip-on' : ''}">${l}</button>`).join('');
+  updateCatalogFilterState();
 }
 renderChips();
 
@@ -454,6 +528,7 @@ function renderCatalog() {
   $('servicesList').innerHTML = (slicedList.length ? slicedList.map(renderCard).join('') :
     '<div class="text-center py-16 space-y-2"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid fa-box-open"></i></div><p class="text-sm font-medium">Нет объявлений по данному запросу</p></div>') +
     (hasMore ? `<div class="pt-2 pb-6 text-center"><button onclick="loadMoreServices()" class="btn mx-auto px-6 py-2.5 bg-tg-card text-tg-text border border-white/10 shadow-md"><i class="fa-solid fa-angles-down mr-1"></i>Загрузить еще (${list.length - displayLimit})</button></div>` : '');
+  updateCatalogFilterState();
 }
 
 function loadMoreServices() {
@@ -469,7 +544,7 @@ function renderMyServices() {
   $('myServicesList').innerHTML = mine.length ? mine.map(x => renderCard(x) + `<div class="flex gap-4 text-[11px] text-tg-hint px-2 -mt-2"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div>`).join('') :
     '<div class="text-center py-12 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><p class="text-xs font-medium">У вас пока нет объявлений</p><button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать первое объявление</button></div>';
 }
-let _t; const filterServices = () => { clearTimeout(_t); _t = setTimeout(renderCatalog, 200); };
+let _t; const filterServices = () => { clearSearchButton(); clearTimeout(_t); _t = setTimeout(renderCatalog, 180); };
 const rerender = () => { renderCatalog(); renderMyServices(); renderRef(); if (isAdmin) { renderAdminPanel(); renderClaims(); } };
 
 /* ---------- Детальная карточка ---------- */
@@ -614,8 +689,8 @@ async function submitReport(id, e) {
   try { await addDoc(collection(db, 'reports'), { serviceId: id, reason: $('reportReason').value, authorUsername: currentUser.username || 'user', createdAt: Date.now() }); showToast("Жалоба отправлена администратору", "success"); closeDetailModal(); }
   catch { showToast("Ошибка отправки жалобы", "error"); }
 }
-function setSearchTag(tag) { $('searchInput').value = tag; renderCatalog(); }
-function selectCategory(c) { currentCategory = c; renderChips(); renderCatalog(); }
+function setSearchTag(tag) { $('searchInput').value = tag; clearSearchButton(); renderCatalog(); }
+function selectCategory(c) { currentCategory = c; displayLimit = 30; renderChips(); renderCatalog(); haptic(); }
 
 /* ---------- Форма ---------- */
 function toggleCustomCityInput(v) { $('customCityContainer').classList.toggle('hidden', v !== 'custom'); }
@@ -866,7 +941,7 @@ function shareSeller(sid) {
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
-  exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
+  exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, toggleCatalogFilters, clearCatalogSearch, resetCatalogFilters, claimReward, resolveClaim, rateSeller, shareSeller });
 
 /* ---------- Firebase sync ---------- */
 function openDeepLink() {
