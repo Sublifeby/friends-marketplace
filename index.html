@@ -244,6 +244,9 @@ nav button span{font-size:.68rem!important}
       </div>
       <div id="customCityContainer" class="hidden"><label class="block text-xs text-tg-hint mb-1">Ваш город / населённый пункт</label>
         <input type="text" id="serviceCustomCity" maxlength="40" placeholder="Например: Солигорск" class="inp"></div>
+      <div><label for="servicePhone" class="block text-xs text-tg-hint mb-1">Телефон для связи (необязательно)</label>
+        <input type="tel" id="servicePhone" maxlength="25" autocomplete="tel" inputmode="tel" placeholder="Например: +375 29 123-45-67" class="inp">
+        <p class="text-[10px] text-tg-hint mt-1">Номер будет виден другим участникам клуба. Оставьте поле пустым, если хотите общаться только в Telegram.</p></div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="block text-xs text-tg-hint mb-1">Обычная цена</label><input type="text" id="servicePrice" maxlength="40" placeholder="1500 руб. или Договорная" class="inp"></div>
         <div><label class="block text-xs text-tg-hint mb-1">Цена для своих</label><input type="text" id="serviceFriendPrice" maxlength="40" placeholder="1000 руб. или Скидка 15%" class="inp"></div>
@@ -428,6 +431,7 @@ function renderCard(s) {
           <span class="text-xs text-tg-hint truncate">@${u || 'friend'}</span>${badge(isVer(s))}
         </div>
         <div class="flex items-center gap-1.5 flex-shrink-0">
+          ${s.phone ? `<button onclick="openPhone('${s.id}', event)" aria-label="Позвонить по объявлению: ${esc(s.name)}" title="Позвонить" class="ibtn !text-emerald-400"><i class="fa-solid fa-phone"></i></button>` : ''}
           <button onclick="shareService('${s.id}', event)" aria-label="Поделиться объявлением: ${esc(s.name)}" title="Поделиться" class="ibtn hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
           <button onclick="toggleFavorite('${s.id}', event)" aria-label="${isFav ? 'Убрать из избранного' : 'Добавить в избранное'}: ${esc(s.name)}" title="${isFav ? 'Убрать из избранного' : 'В избранное'}" class="ibtn"><i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i></button>
           ${manage ? `${s.listingType === 'request' ? `<button onclick="toggleRequestResolved('${s.id}', event)" title="${s.requestStatus === 'resolved' ? 'Снова открыть запрос' : 'Отметить запрос решённым'}" class="ibtn ${s.requestStatus === 'resolved' ? '!text-emerald-400' : '!text-amber-300'}"><i class="fa-solid ${s.requestStatus === 'resolved' ? 'fa-rotate-left' : 'fa-check'}"></i></button>` : ''}<button onclick="toggleArchive('${s.id}', event)" title="В архив / вернуть" class="ibtn"><i class="fa-solid fa-box-archive"></i></button>
@@ -597,6 +601,7 @@ function openDetailModal(id) {
       </div>
       <div class="flex items-center gap-2 bg-tg-card p-2 rounded-2xl border border-white/5">
         ${s.listingType === 'request' && s.requestStatus === 'resolved' ? '<div class="flex-1 text-center text-xs text-tg-hint py-2.5"><i class="fa-solid fa-check-circle mr-1"></i>Запрос уже решён</div>' : `<button onclick="openContact('${u}', event, '${id}')" class="btn flex-1 py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>${s.listingType === 'request' ? 'Предложить помощь в Telegram' : 'Связаться в Telegram'}</span></button>`}
+        ${s.phone ? `<button onclick="openPhone('${id}', event)" aria-label="Позвонить по объявлению: ${esc(s.name)}" title="Позвонить" class="ibtn !w-10 !h-10 !text-emerald-400"><i class="fa-solid fa-phone"></i></button>` : ''}
         <button onclick="shareService('${id}', event)" aria-label="Поделиться объявлением: ${esc(s.name)}" title="Поделиться" class="ibtn !w-10 !h-10 hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
         <button onclick="toggleFavorite('${id}', event)" aria-label="${isFav ? 'Убрать из избранного' : 'Добавить в избранное'}: ${esc(s.name)}" title="${isFav ? 'Убрать из избранного' : 'В избранное'}" class="ibtn !w-10 !h-10"><i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i></button>
         ${isAdmin ? `<button onclick="toggleServiceFeatured('${id}', ${feat}, event)" class="ibtn !w-10 !h-10 ${feat ? '!bg-amber-400 !text-black' : '!text-amber-400'}"><i class="fa-solid fa-crown"></i></button>` : ''}
@@ -653,10 +658,28 @@ function openSellerModal(username, e) {
 function closeSellerModal(e) { e?.stopPropagation?.(); $('sellerModal').classList.add('hidden'); updateBack(); }
 function openContact(username, e, sid) {
   e?.stopPropagation?.();
+  const service = sid ? allServices.find(x => String(x.id) === String(sid)) : null;
   if (sid) trackContact(sid);
-  if (!username || username === 'user' || username === 'unknown') return showToast("У автора не указан username", "error");
-  const url = `https://t.me/${username}`;
-  tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, '_blank');
+  const cleanUsername = String(username || '').replace(/^@/, '').trim();
+  if (!cleanUsername || cleanUsername === 'user' || cleanUsername === 'unknown') return showToast("У автора не указан username Telegram", "error");
+  const appLink = service
+    ? (APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=service_${encodeURIComponent(service.id)}` : `https://t.me/${BOT_USERNAME}?startapp=service_${encodeURIComponent(service.id)}`)
+    : (APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}` : `https://t.me/${BOT_USERNAME}`);
+  const message = service
+    ? `Здравствуйте! Пишу по объявлению «${service.name || 'Без названия'}».\n\nСсылка на объявление в приложении клуба SUBLIFE: ${appLink}`
+    : `Здравствуйте! Пишу вам из клуба SUBLIFE.`;
+  // Telegram откроет диалог с подготовленным текстом; пользователь сам отправляет сообщение.
+  const url = `https://t.me/${encodeURIComponent(cleanUsername)}?text=${encodeURIComponent(message)}`;
+  if (tg?.openTelegramLink) tg.openTelegramLink(url);
+  else window.open(url, '_blank', 'noopener,noreferrer');
+}
+function openPhone(id, e) {
+  e?.stopPropagation?.();
+  const service = allServices.find(x => String(x.id) === String(id));
+  if (!service?.phone) return showToast('Телефон не указан', 'error');
+  const tel = String(service.phone).replace(/[^+\d]/g, '');
+  if (!tel) return showToast('Номер телефона указан некорректно', 'error');
+  window.location.href = `tel:${tel}`;
 }
 
 /* ---------- Действия ---------- */
@@ -787,7 +810,7 @@ function openEditModal(id, e) {
   const s = allServices.find(x => x.id === id); if (!s || !(isOwner(s) || isAdmin)) return;
   $('serviceForm').reset();
   $('modalTitle').textContent = "Редактировать объявление"; $('editServiceId').value = s.id;
-  $('serviceName').value = s.name; $('serviceCategory').value = s.category; $('serviceListingType').value = s.listingType || 'offer';
+  $('serviceName').value = s.name; $('serviceCategory').value = s.category; $('serviceListingType').value = s.listingType || 'offer'; $('servicePhone').value = s.phone || '';
   if (CITIES.includes(s.city)) { $('serviceCitySelect').value = s.city; $('customCityContainer').classList.add('hidden'); }
   else { $('serviceCitySelect').value = 'custom'; $('customCityContainer').classList.remove('hidden'); $('serviceCustomCity').value = s.city || ''; }
   $('servicePrice').value = s.price === 'Договорная' ? '' : (s.price || ''); $('serviceFriendPrice').value = s.friendPrice || '';
@@ -810,9 +833,11 @@ async function saveService(e) {
     const pending = globalSettings.preModeration && !isAdmin;
     let city = $('serviceCitySelect').value; if (city === 'custom') city = $('serviceCustomCity').value.trim() || 'Область';
     const tags = $('serviceTags').value.trim().split(/[, \s]+/).filter(Boolean).map(t => '#' + t.replace(/^#/, '').toLowerCase());
+    const phone = $('servicePhone').value.trim();
+    if (phone && !/^[+\d()\s.-]{7,25}$/.test(phone)) throw new Error('Проверьте номер телефона');
     const images = await Promise.all(photos.map(uploadImg));
     const data = {
-      name: $('serviceName').value.trim(), category: $('serviceCategory').value, city, listingType: $('serviceListingType').value || 'offer',
+      name: $('serviceName').value.trim(), category: $('serviceCategory').value, city, phone, listingType: $('serviceListingType').value || 'offer',
       requestStatus: $('serviceListingType').value === 'request' ? (ex?.listingType === 'request' ? (ex.requestStatus || 'open') : 'open') : null,
       status: ex ? (pending ? 'pending' : (ex.status || 'active')) : (pending ? 'pending' : 'active'),
       price: $('servicePrice').value.trim() || "Договорная", friendPrice: $('serviceFriendPrice').value.trim(),
@@ -989,7 +1014,7 @@ async function shareSeller(sid) {
   catch { window.open(telegramShareUrl, '_blank', 'noopener,noreferrer'); }
 }
 
-W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
+W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, toggleRequestResolved, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
