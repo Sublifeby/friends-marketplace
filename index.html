@@ -118,15 +118,22 @@ nav button span{font-size:.68rem!important}
         </div>
         <select id="citySelect" onchange="renderCatalog()" class="sm-inp max-w-[110px] truncate"></select>
       </div>
-      <div class="grid grid-cols-3 gap-2">
-        <input type="number" id="minPriceInput" oninput="filterServices()" placeholder="Цена от" class="sm-inp">
-        <input type="number" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до" class="sm-inp">
-        <select id="sortSelect" onchange="renderCatalog()" class="sm-inp">
-          <option value="newest">Новые</option><option value="price_asc">Дешевле</option><option value="price_desc">Дороже</option>
+      <div class="grid grid-cols-2 gap-2">
+        <select id="listingTypeFilter" onchange="renderCatalog()" aria-label="Тип объявления" class="sm-inp">
+          <option value="all">Все объявления</option><option value="offer">Предлагаю</option><option value="request">Ищу</option>
         </select>
+        <select id="sortSelect" onchange="renderCatalog()" aria-label="Сортировка объявлений" class="sm-inp">
+          <option value="newest">Новые</option><option value="relevant">По совпадению</option><option value="price_asc">Дешевле</option><option value="price_desc">Дороже</option>
+        </select>
+        <input type="number" min="0" id="minPriceInput" oninput="filterServices()" placeholder="Цена от" aria-label="Минимальная цена" class="sm-inp">
+        <input type="number" min="0" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до" aria-label="Максимальная цена" class="sm-inp">
       </div>
       <div id="quickTags" class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5"></div>
       <div id="categoryChips" class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1"></div>
+      <div class="flex items-center justify-between gap-3 text-xs text-tg-hint px-1">
+        <span id="catalogResultsCount" aria-live="polite">Загрузка объявлений…</span>
+        <button type="button" id="clearCatalogFilters" onclick="clearCatalogFilters()" class="hidden text-tg-accent font-semibold whitespace-nowrap"><i class="fa-solid fa-rotate-left mr-1"></i>Сбросить фильтры</button>
+      </div>
     </div>
     <div class="card p-3.5 flex items-center justify-between text-xs">
       <div class="flex items-center space-x-2">
@@ -228,6 +235,9 @@ nav button span{font-size:.68rem!important}
       <input type="hidden" id="editServiceId">
       <div><label class="block text-xs text-tg-hint mb-1">Название услуги или товара</label>
         <input type="text" id="serviceName" required maxlength="100" placeholder="Например: Ремонт телефонов" class="inp"></div>
+      <div><label class="block text-xs text-tg-hint mb-1">Что вы хотите разместить?</label>
+        <select id="serviceListingType" class="inp"><option value="offer">Предлагаю услугу / товар</option><option value="request">Ищу услугу / товар</option></select>
+        <p class="text-[10px] text-tg-hint mt-1">«Ищу» поможет участникам понять, что вам нужна помощь или конкретная вещь.</p></div>
       <div class="grid grid-cols-2 gap-3">
         <div><label class="block text-xs text-tg-hint mb-1">Категория</label><select id="serviceCategory" class="inp"></select></div>
         <div><label class="block text-xs text-tg-hint mb-1">Город / Регион</label><select id="serviceCitySelect" onchange="toggleCustomCityInput(this.value)" class="inp"></select></div>
@@ -401,7 +411,8 @@ function renderCard(s) {
     <div class="p-4 space-y-3">
       <div class="flex items-start justify-between">
         <div class="min-w-0">
-          <div class="flex items-center gap-2"><span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${catName(s.category)}</span>
+          <div class="flex items-center gap-2 flex-wrap"><span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${catName(s.category)}</span>
+            <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${s.listingType === 'request' ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-500/10 text-emerald-400'}"><i class="fa-solid ${s.listingType === 'request' ? 'fa-magnifying-glass' : 'fa-handshake'} mr-1"></i>${s.listingType === 'request' ? 'Ищу' : 'Предлагаю'}</span>
             <span class="pill"><i class="fa-solid fa-location-dot mr-1"></i>${esc(s.city || 'Минск')}</span></div>
           <h3 class="font-bold text-base mt-1.5 break-words">${esc(s.name)}</h3>
         </div>
@@ -429,39 +440,83 @@ function renderCard(s) {
 
 /* ---------- Каталог ---------- */
 let lastCatalogFilterKey = '';
+const normalizeSearch = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('ru').replace(/ё/g, 'е').trim();
+function clearCatalogFilters() {
+  $('searchInput').value = '';
+  $('citySelect').value = 'all';
+  $('minPriceInput').value = '';
+  $('maxPriceInput').value = '';
+  $('sortSelect').value = 'newest';
+  $('listingTypeFilter').value = 'all';
+  currentCategory = 'all';
+  renderChips();
+  lastCatalogFilterKey = '';
+  displayLimit = 30;
+  renderCatalog();
+}
 function renderCatalog() {
   if (!servicesLoaded) return;
-  const q = $('searchInput').value.toLowerCase().trim(), city = $('citySelect').value;
-  const min = parseInt($('minPriceInput').value, 10) || 0, max = parseInt($('maxPriceInput').value, 10) || Infinity, sort = $('sortSelect').value;
-  const filterKey = JSON.stringify([currentCategory, q, city, min, max === Infinity ? null : max, sort]);
+  const q = normalizeSearch($('searchInput').value), queryWords = q.split(/\s+/).filter(Boolean), city = $('citySelect').value;
+  const minRaw = $('minPriceInput').value.trim(), maxRaw = $('maxPriceInput').value.trim();
+  const min = minRaw === '' ? 0 : Math.max(0, Number(minRaw));
+  const max = maxRaw === '' ? Infinity : Math.max(0, Number(maxRaw));
+  const sort = $('sortSelect').value, listingType = $('listingTypeFilter').value;
+  const filterKey = JSON.stringify([currentCategory, q, city, minRaw, maxRaw, sort, listingType]);
   if (filterKey !== lastCatalogFilterKey) { displayLimit = 30; lastCatalogFilterKey = filterKey; }
   const fv = favs(), rv = viewed();
-  const list = allServices.filter(s => {
+  const matchesText = s => {
+    const haystack = normalizeSearch([s.name, s.shortDesc, s.desc, (s.tags || []).join(' '), s.city, s.authorUsername, catName(s.category), s.listingType === 'request' ? 'ищу поиск запрос' : 'предлагаю предложение', s.price, s.friendPrice].join(' '));
+    return queryWords.every(word => haystack.includes(word));
+  };
+  const relevanceScore = s => {
+    if (!queryWords.length) return 0;
+    const name = normalizeSearch(s.name), tags = normalizeSearch((s.tags || []).join(' '));
+    return queryWords.reduce((score, word) => score + (name === word ? 10 : name.startsWith(word) ? 6 : name.includes(word) ? 4 : 0) + (tags.includes(word) ? 2 : 0), 0);
+  };
+  const invalidRange = minRaw !== '' && maxRaw !== '' && min > max;
+  const list = invalidRange ? [] : allServices.filter(s => {
     const st = s.status || 'active';
     const special = currentCategory === 'favorites' || currentCategory === 'recently_viewed';
     if (st !== 'active' && !special) return false;
     if (st === 'pending' && !(isOwner(s) || isAdmin)) return false;
-    if (currentCategory === 'favorites' && !fv.includes(s.id)) return false;
-    if (currentCategory === 'recently_viewed' && !rv.includes(s.id)) return false;
+    if (currentCategory === 'favorites' && !fv.includes(String(s.id))) return false;
+    if (currentCategory === 'recently_viewed' && !rv.includes(String(s.id))) return false;
     if (!special && currentCategory !== 'all' && s.category !== currentCategory) return false;
     if (city !== 'all' && (s.city || 'Минск') !== city) return false;
-    const p = num(s); if ((min || max !== Infinity) && (p < min || p > max)) return false;
-    return (s.name || '').toLowerCase().includes(q) || (s.shortDesc || s.desc || '').toLowerCase().includes(q) || (s.tags || []).join(' ').toLowerCase().includes(q);
+    // Старые объявления без listingType считаются предложениями, чтобы не исчезнуть из каталога.
+    if (listingType !== 'all' && (s.listingType || 'offer') !== listingType) return false;
+    const p = num(s);
+    if ((minRaw !== '' || maxRaw !== '') && (p <= 0 || p < min || p > max)) return false;
+    return matchesText(s);
   });
   list.sort((a, b) => {
     if (isFeat(a) !== isFeat(b)) return (isFeat(b) ? 1 : 0) - (isFeat(a) ? 1 : 0);
-    if (sort === 'price_asc') return num(a) - num(b);
-    if (sort === 'price_desc') return num(b) - num(a);
+    if (sort === 'price_asc' || sort === 'price_desc') {
+      const pa = num(a), pb = num(b);
+      if (pa <= 0 && pb > 0) return 1;
+      if (pb <= 0 && pa > 0) return -1;
+      return sort === 'price_asc' ? pa - pb : pb - pa;
+    }
+    if (sort === 'relevant' && queryWords.length) {
+      const scoreDiff = relevanceScore(b) - relevanceScore(a);
+      if (scoreDiff) return scoreDiff;
+    }
     return (b.createdAt || 0) - (a.createdAt || 0);
   });
 
-  // Оптимизация: Подгрузка пагинацией
+  const hasActiveFilters = !!q || city !== 'all' || minRaw !== '' || maxRaw !== '' || sort !== 'newest' || listingType !== 'all' || currentCategory !== 'all';
+  const countEl = $('catalogResultsCount');
+  if (countEl) countEl.textContent = invalidRange ? 'Проверьте диапазон цены' : `Найдено: ${list.length}${list.length > displayLimit ? ` · показано ${Math.min(displayLimit, list.length)}` : ''}`;
+  const clearBtn = $('clearCatalogFilters');
+  if (clearBtn) clearBtn.classList.toggle('hidden', !hasActiveFilters);
+
+  // Пагинация: отображаем первую порцию, затем по 30 карточек.
   const slicedList = list.slice(0, displayLimit);
   const hasMore = list.length > displayLimit;
-
-  const emptyHtml = currentCategory === 'favorites'
+  const emptyFavorites = currentCategory === 'favorites' && !q && city === 'all' && minRaw === '' && maxRaw === '' && sort === 'newest' && listingType === 'all';
+  const emptyHtml = emptyFavorites
     ? `<div class="text-center py-12 px-4 space-y-3"><div class="w-14 h-14 rounded-2xl bg-amber-400/10 flex items-center justify-center mx-auto text-amber-400 text-xl"><i class="fa-regular fa-star"></i></div><p class="text-sm font-semibold">Здесь пока пусто</p><p class="text-xs text-tg-hint max-w-xs mx-auto">Добавляйте интересные предложения в избранное кнопкой со звёздочкой — они будут собраны здесь.</p><button type="button" onclick="selectCategory('all')" class="btn mx-auto px-5 py-2.5"><i class="fa-solid fa-store mr-1"></i>Перейти в каталог</button></div>`
-    : '<div class="text-center py-16 space-y-2"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid fa-box-open"></i></div><p class="text-sm font-medium">Нет объявлений по данному запросу</p></div>';
+    : `<div class="text-center py-14 px-4 space-y-3"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid ${invalidRange ? 'fa-sliders' : 'fa-magnifying-glass'}"></i></div><p class="text-sm font-semibold">${invalidRange ? 'Минимальная цена больше максимальной' : 'Ничего не найдено'}</p><p class="text-xs text-tg-hint">${invalidRange ? 'Измените границы цены и попробуйте снова.' : 'Попробуйте изменить запрос или сбросить часть фильтров.'}</p>${hasActiveFilters ? '<button type="button" onclick="clearCatalogFilters()" class="btn mx-auto px-5 py-2.5"><i class="fa-solid fa-rotate-left mr-1"></i>Сбросить фильтры</button>' : ''}</div>`;
   $('servicesList').innerHTML = (slicedList.length ? slicedList.map(renderCard).join('') : emptyHtml) +
     (hasMore ? `<div class="pt-2 pb-6 text-center"><button type="button" onclick="loadMoreServices()" class="btn mx-auto px-6 py-2.5 bg-tg-card text-tg-text border border-white/10 shadow-md"><i class="fa-solid fa-angles-down mr-1"></i>Загрузить еще (${list.length - displayLimit})</button></div>` : '');
 }
@@ -531,6 +586,7 @@ function openDetailModal(id) {
       <div class="flex items-start justify-between border-b border-white/5 pb-3">
         <div class="min-w-0 pr-2">
           <div class="flex items-center gap-2 flex-wrap"><span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${catName(s.category)}</span>
+            <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${s.listingType === 'request' ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-500/10 text-emerald-400'}"><i class="fa-solid ${s.listingType === 'request' ? 'fa-magnifying-glass' : 'fa-handshake'} mr-1"></i>${s.listingType === 'request' ? 'Ищу' : 'Предлагаю'}</span>
             <span class="pill"><i class="fa-solid fa-location-dot mr-1"></i>${esc(s.city || 'Минск')}</span></div>
           <h2 class="font-bold text-xl mt-2 leading-snug break-words">${esc(s.name)}</h2>
         </div>
@@ -717,7 +773,7 @@ function openEditModal(id, e) {
   const s = allServices.find(x => x.id === id); if (!s || !(isOwner(s) || isAdmin)) return;
   $('serviceForm').reset();
   $('modalTitle').textContent = "Редактировать объявление"; $('editServiceId').value = s.id;
-  $('serviceName').value = s.name; $('serviceCategory').value = s.category;
+  $('serviceName').value = s.name; $('serviceCategory').value = s.category; $('serviceListingType').value = s.listingType || 'offer';
   if (CITIES.includes(s.city)) { $('serviceCitySelect').value = s.city; $('customCityContainer').classList.add('hidden'); }
   else { $('serviceCitySelect').value = 'custom'; $('customCityContainer').classList.remove('hidden'); $('serviceCustomCity').value = s.city || ''; }
   $('servicePrice').value = s.price === 'Договорная' ? '' : (s.price || ''); $('serviceFriendPrice').value = s.friendPrice || '';
@@ -742,7 +798,7 @@ async function saveService(e) {
     const tags = $('serviceTags').value.trim().split(/[, \s]+/).filter(Boolean).map(t => '#' + t.replace(/^#/, '').toLowerCase());
     const images = await Promise.all(photos.map(uploadImg));
     const data = {
-      name: $('serviceName').value.trim(), category: $('serviceCategory').value, city,
+      name: $('serviceName').value.trim(), category: $('serviceCategory').value, city, listingType: $('serviceListingType').value || 'offer',
       status: ex ? (pending ? 'pending' : (ex.status || 'active')) : (pending ? 'pending' : 'active'),
       price: $('servicePrice').value.trim() || "Договорная", friendPrice: $('serviceFriendPrice').value.trim(),
       priceNum: Math.max(0, parseInt($('servicePriceNum').value, 10) || 0),
@@ -919,7 +975,7 @@ async function shareSeller(sid) {
 }
 
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
-  toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
+  toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
