@@ -38,13 +38,66 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
 @media(min-width:640px){.modal{align-items:center;padding:1rem}.sheet{border-radius:1rem}}
 @keyframes toastIn{from{transform:translateY(-100%);opacity:0}to{transform:none;opacity:1}}
 .toast-animate{animation:toastIn .3s cubic-bezier(.16,1,.3,1) forwards}
+
+/* SUBLIFE UI refresh — визуальные улучшения без изменения бизнес-логики */
+:root{--sublife-teal:#24c7b7;--sublife-orange:#ff934f;--ui-line:rgba(148,163,184,.16);--ui-shadow:0 10px 28px rgba(0,0,0,.12)}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{padding-bottom:calc(5.5rem + env(safe-area-inset-bottom));line-height:1.45}
+button,input,select,textarea{touch-action:manipulation}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--sublife-teal)!important;outline-offset:3px}
+.inp,.sm-inp{border-color:var(--ui-line);transition:border-color .18s,box-shadow .18s,background .18s}
+.inp:focus,.sm-inp:focus{border-color:var(--sublife-teal);box-shadow:0 0 0 3px rgba(36,199,183,.13)}
+.inp::placeholder,.sm-inp::placeholder{color:var(--c-hint);opacity:.8}
+.card{border-color:var(--ui-line);box-shadow:0 2px 10px rgba(0,0,0,.035);transition:border-color .2s,transform .2s,box-shadow .2s}
+#servicesList>.card{border-radius:1.2rem}
+#servicesList>.card:active{transform:scale(.992)}
+.btn{min-height:2.5rem;border-radius:.9rem;font-weight:650;box-shadow:0 5px 16px rgba(36,199,183,.12);transition:transform .16s,filter .16s,box-shadow .16s}
+.btn:active{transform:scale(.97);filter:brightness(.96)}
+.ibtn{width:2.25rem;height:2.25rem;border:1px solid var(--ui-line);transition:background .18s,color .18s,border-color .18s}
+.ibtn:active{transform:scale(.94)}
+.chip{border:1px solid var(--ui-line);border-radius:999px;padding:.45rem .85rem}
+.chip.chip-on{border-color:transparent;box-shadow:0 3px 10px rgba(36,199,183,.18)}
+header{padding-top:calc(.7rem + env(safe-area-inset-top))!important;border-bottom-color:var(--ui-line)!important}
+header>div:first-child{border-radius:1rem}
+header #userAvatar{background:linear-gradient(135deg,var(--sublife-teal),#1684c7)!important;box-shadow:0 4px 12px rgba(36,199,183,.2)}
+header p{letter-spacing:.01em}
+main{padding-top:1.1rem!important}
+#searchInput{min-height:2.85rem;border-radius:1rem;background:color-mix(in srgb,var(--c-card) 88%,transparent)}
+#citySelect{min-height:2.85rem;border-radius:1rem}
+#categoryChips,#quickTags{padding-top:.15rem;padding-bottom:.35rem}
+#categoryChips:empty,#quickTags:empty{display:none}
+#totalOffersCount{color:var(--sublife-teal);font-size:1.15rem}
+.service-media{position:relative;height:clamp(150px,48vw,230px);overflow:hidden;background:linear-gradient(135deg,rgba(36,199,183,.15),rgba(22,132,199,.12) 55%,rgba(255,147,79,.13));}
+.service-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s ease}
+@media(hover:hover){#servicesList>.card:hover{transform:translateY(-2px);box-shadow:var(--ui-shadow);border-color:rgba(36,199,183,.35)}#servicesList>.card:hover .service-media img{transform:scale(1.025)}}
+.service-placeholder{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.55rem;color:var(--sublife-teal);}
+.service-placeholder .placeholder-icon{width:3.5rem;height:3.5rem;border-radius:1.2rem;background:rgba(36,199,183,.12);display:grid;place-items:center;font-size:1.45rem;border:1px solid rgba(36,199,183,.18)}
+.service-placeholder span{font-size:.72rem;font-weight:650;letter-spacing:.04em;text-transform:uppercase;opacity:.8}
+#servicesList .p-4{padding:1rem}
+#servicesList h3{font-size:1rem;line-height:1.35;letter-spacing:-.015em}
+#servicesList .border-t{border-color:var(--ui-line)}
+#servicesList .text-emerald-400{color:#36d6a5}
+nav{padding-bottom:calc(.65rem + env(safe-area-inset-bottom))!important;border-top-color:var(--ui-line)!important;box-shadow:0 -8px 24px rgba(0,0,0,.08);max-width:42rem!important}
+nav button{position:relative;min-width:4.5rem;min-height:2.8rem;border-radius:.9rem;padding:.3rem .7rem;transition:background .18s,color .18s}
+nav button i{transition:transform .18s}
+nav button.text-tg-accent{background:rgba(36,199,183,.11);color:var(--sublife-teal)!important}
+nav button.text-tg-accent i{transform:translateY(-1px)}
+nav button span{font-size:.68rem!important}
+.modal{padding-bottom:env(safe-area-inset-bottom)}
+.sheet{border-color:var(--ui-line);box-shadow:0 -12px 50px rgba(0,0,0,.2);overscroll-behavior:contain}
+#serviceForm label{font-weight:600;letter-spacing:.01em}
+#photosPreviewGrid img{border-radius:.7rem}
+@media(min-width:640px){#servicesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}#servicesList>*{margin-top:0!important}#servicesList>.card{height:100%;display:flex;flex-direction:column}#servicesList>.card>.service-media{flex-shrink:0}#servicesList>.card>.p-4{display:flex;flex:1;flex-direction:column}#servicesList>.card>.p-4>.border-t{margin-top:auto}#servicesList>div:not(.card){grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
-<body class="pb-24">
+<body>
 <div id="toastContainer" class="fixed top-3 left-0 right-0 z-[9999] flex flex-col items-center space-y-2 pointer-events-none px-4"></div>
 
 <header class="sticky top-0 z-40 bg-tg-bg/90 backdrop-blur-md px-4 py-3 border-b border-white/5 flex items-center justify-between">
-  <div onclick="switchTab('profile')" class="flex items-center space-x-3 min-w-0 pr-2 cursor-pointer">
+  <div role="button" tabindex="0" aria-label="Открыть профиль" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('profile')}" onclick="switchTab('profile')" class="flex items-center space-x-3 min-w-0 pr-2 cursor-pointer">
     <div id="userAvatar" class="w-10 h-10 rounded-full bg-tg-button flex items-center justify-center font-bold text-tg-buttonText overflow-hidden flex-shrink-0"><i class="fa-solid fa-user"></i></div>
     <div class="min-w-0">
       <div class="flex items-center space-x-1.5"><h1 id="userName" class="font-semibold text-sm truncate">Загрузка...</h1><span id="userBadgeHeader"></span></div>
@@ -156,9 +209,9 @@ body{background-color:var(--c-bg);color:var(--c-text);font-family:-apple-system,
 </main>
 
 <nav class="fixed bottom-0 left-0 right-0 bg-tg-bg/95 backdrop-blur-md border-t border-white/5 px-6 py-2.5 flex justify-around items-center z-40 max-w-2xl mx-auto">
-  <button onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-store text-lg"></i><span class="text-[10px] font-medium">Каталог</span></button>
-  <button onclick="switchTab('profile')" id="navProfile" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-medium">Профиль</span></button>
-  <button onclick="switchTab('admin')" id="navAdmin" class="flex-col items-center space-y-1 hidden"><i class="fa-solid fa-shield text-lg"></i><span class="text-[10px] font-medium">Админ</span></button>
+  <button type="button" aria-label="Каталог объявлений" aria-current="page" onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-store text-lg"></i><span class="text-[10px] font-medium">Каталог</span></button>
+  <button type="button" aria-label="Мой профиль" onclick="switchTab('profile')" id="navProfile" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-medium">Профиль</span></button>
+  <button type="button" aria-label="Панель администратора" onclick="switchTab('admin')" id="navAdmin" class="flex-col items-center space-y-1 hidden"><i class="fa-solid fa-shield text-lg"></i><span class="text-[10px] font-medium">Админ</span></button>
 </nav>
 
 <div id="sellerModal" class="modal hidden"><div class="sheet p-5"><div id="sellerContent"></div></div></div>
@@ -339,7 +392,7 @@ function renderCard(s) {
     ${feat ? '<div class="vip"><i class="fa-solid fa-crown mr-1"></i>VIP</div>' : ''}
     ${arch ? `<div class="absolute top-3 ${feat ? 'left-20' : 'left-3'} z-10 bg-black/70 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">Продано / В архиве</div>` : ''}
     ${st === 'pending' ? `<div class="absolute top-3 ${feat ? 'left-20' : 'left-3'} z-10 bg-black/70 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">На модерации</div>` : ''}
-    ${imgs[0] ? `<img src="${esc(imgs[0])}" loading="lazy" decoding="async" class="h-44 w-full object-cover ${arch ? 'opacity-60' : ''}">` : ''}
+    <div class="service-media ${arch ? 'opacity-70' : ''}">${imgs[0] ? `<img src="${esc(imgs[0])}" loading="lazy" decoding="async" alt="${esc(s.name || 'Фото объявления')}" onerror="this.remove()">` : `<div class="service-placeholder"><div class="placeholder-icon"><i class="fa-solid ${s.category === 'goods' ? 'fa-box-open' : s.category === 'realestate' ? 'fa-house' : s.category === 'auto' ? 'fa-car' : 'fa-handshake'}"></i></div><span>${catName(s.category)}</span></div>`}</div>
     <div class="p-4 space-y-3">
       <div class="flex items-start justify-between">
         <div class="min-w-0">
