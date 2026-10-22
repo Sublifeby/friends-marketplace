@@ -363,7 +363,10 @@ function switchTab(tab) {
 
 /* ---------- Утилиты ---------- */
 let _favs = null;
-const favs = () => _favs ??= (() => { try { return JSON.parse(localStorage.getItem('sublife_favorites') || '[]'); } catch { return []; } })();
+// Избранное в локальном хранилище разделяется по Telegram ID, чтобы аккаунты
+// на одном устройстве не видели сохранённые объявления друг друга.
+const favoritesKey = () => tgUser ? `sublife_favorites_${String(currentUser.id)}` : 'sublife_favorites';
+const favs = () => _favs ??= (() => { try { const v = JSON.parse(localStorage.getItem(favoritesKey()) || '[]'); return Array.isArray(v) ? [...new Set(v.filter(x => typeof x === 'string' || typeof x === 'number').map(String))] : []; } catch { return []; } })();
 const viewedKey = () => 'sublife_viewed_' + currentUser.id;
 const viewed = () => { try { return JSON.parse(localStorage.getItem(viewedKey()) || '[]'); } catch { return []; } };
 renderChips();
@@ -424,10 +427,13 @@ function renderCard(s) {
 }
 
 /* ---------- Каталог ---------- */
+let lastCatalogFilterKey = '';
 function renderCatalog() {
   if (!servicesLoaded) return;
   const q = $('searchInput').value.toLowerCase().trim(), city = $('citySelect').value;
   const min = parseInt($('minPriceInput').value, 10) || 0, max = parseInt($('maxPriceInput').value, 10) || Infinity, sort = $('sortSelect').value;
+  const filterKey = JSON.stringify([currentCategory, q, city, min, max === Infinity ? null : max, sort]);
+  if (filterKey !== lastCatalogFilterKey) { displayLimit = 30; lastCatalogFilterKey = filterKey; }
   const fv = favs(), rv = viewed();
   const list = allServices.filter(s => {
     const st = s.status || 'active';
@@ -603,7 +609,7 @@ function toggleFavorite(id, e) {
   let f = favs(); const had = f.includes(id);
   f = had ? f.filter(x => x !== id) : [...f, id];
   _favs = f;
-  try { localStorage.setItem('sublife_favorites', JSON.stringify(f)); } catch {}
+  try { localStorage.setItem(favoritesKey(), JSON.stringify(f)); } catch {}
   haptic(); csSaveFavs(f); countFav(id, had);
   showToast(had ? 'Удалено из избранного' : 'Добавлено в избранное!', had ? 'info' : 'success');
   renderChips(); rerender();
@@ -798,7 +804,7 @@ function csLoadFavs() {
     if (err || !v) return;
     const cloud = CS_KEYS.map(k => v[k] || '').join('').split(',').filter(Boolean);
     const list = v.fvm ? cloud : [...new Set([...favs(), ...cloud])];
-    _favs = list; try { localStorage.setItem('sublife_favorites', JSON.stringify(list)); } catch {}
+    _favs = [...new Set(list.map(String))]; try { localStorage.setItem(favoritesKey(), JSON.stringify(_favs)); } catch {}
     if (!v.fvm) csSaveFavs(list);
     renderChips(); rerender();
   });
@@ -875,10 +881,18 @@ async function rateSeller(sid, v) {
     haptic(); showToast("Спасибо за оценку!", "success"); loadSellerExtra(sid, allServices.filter(x => String(x.authorId) === sid));
   } catch { showToast("Не удалось сохранить оценку", "error"); }
 }
-function shareSeller(sid) {
-  const link = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${sid}` : `https://t.me/${BOT_USERNAME}?startapp=seller_${sid}`;
-  const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Посмотри профиль продавца в нашем маркетплейсе!')}`;
-  tg?.openTelegramLink ? tg.openTelegramLink(url) : window.open(url, '_blank');
+async function shareSeller(sid) {
+  const link = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${encodeURIComponent(sid)}` : `https://t.me/${BOT_USERNAME}?startapp=seller_${encodeURIComponent(sid)}`;
+  const title = 'Профиль участника клуба SUBLIFE';
+  const text = 'Посмотри профиль участника в закрытом клубе SUBLIFE для своих!';
+  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
+  if (tg?.openTelegramLink) { tg.openTelegramLink(telegramShareUrl); return; }
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url: link }); return; }
+    catch (err) { if (err?.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(link); showToast('Ссылка на профиль скопирована', 'success'); }
+  catch { window.open(telegramShareUrl, '_blank', 'noopener,noreferrer'); }
 }
 
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
