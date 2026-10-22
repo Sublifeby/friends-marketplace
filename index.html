@@ -413,6 +413,7 @@ function renderCard(s) {
         <div class="min-w-0">
           <div class="flex items-center gap-2 flex-wrap"><span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${catName(s.category)}</span>
             <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${s.listingType === 'request' ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-500/10 text-emerald-400'}"><i class="fa-solid ${s.listingType === 'request' ? 'fa-magnifying-glass' : 'fa-handshake'} mr-1"></i>${s.listingType === 'request' ? 'Ищу' : 'Предлагаю'}</span>
+            ${s.listingType === 'request' && s.requestStatus === 'resolved' ? '<span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-tg-hint"><i class="fa-solid fa-check mr-1"></i>Решено</span>' : ''}
             <span class="pill"><i class="fa-solid fa-location-dot mr-1"></i>${esc(s.city || 'Минск')}</span></div>
           <h3 class="font-bold text-base mt-1.5 break-words">${esc(s.name)}</h3>
         </div>
@@ -429,10 +430,10 @@ function renderCard(s) {
         <div class="flex items-center gap-1.5 flex-shrink-0">
           <button onclick="shareService('${s.id}', event)" aria-label="Поделиться объявлением: ${esc(s.name)}" title="Поделиться" class="ibtn hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
           <button onclick="toggleFavorite('${s.id}', event)" aria-label="${isFav ? 'Убрать из избранного' : 'Добавить в избранное'}: ${esc(s.name)}" title="${isFav ? 'Убрать из избранного' : 'В избранное'}" class="ibtn"><i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i></button>
-          ${manage ? `<button onclick="toggleArchive('${s.id}', event)" title="В архив / вернуть" class="ibtn"><i class="fa-solid fa-box-archive"></i></button>
+          ${manage ? `${s.listingType === 'request' ? `<button onclick="toggleRequestResolved('${s.id}', event)" title="${s.requestStatus === 'resolved' ? 'Снова открыть запрос' : 'Отметить запрос решённым'}" class="ibtn ${s.requestStatus === 'resolved' ? '!text-emerald-400' : '!text-amber-300'}"><i class="fa-solid ${s.requestStatus === 'resolved' ? 'fa-rotate-left' : 'fa-check'}"></i></button>` : ''}<button onclick="toggleArchive('${s.id}', event)" title="В архив / вернуть" class="ibtn"><i class="fa-solid fa-box-archive"></i></button>
             <button onclick="openEditModal('${s.id}', event)" class="ibtn"><i class="fa-solid fa-pen"></i></button>
             <button onclick="deleteService('${s.id}', event)" class="ibtn !bg-red-500/10 !text-red-400"><i class="fa-solid fa-trash"></i></button>` : ''}
-          <button onclick="openContact('${u}', event, '${s.id}')" class="btn px-3 py-1.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться</span></button>
+          ${s.listingType === 'request' && s.requestStatus === 'resolved' ? '<span class="text-[10px] text-tg-hint px-2 py-1"><i class="fa-solid fa-check-circle mr-1"></i>Запрос решён</span>' : `<button onclick="openContact('${u}', event, '${s.id}')" class="btn px-3 py-1.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>${s.listingType === 'request' ? 'Предложить помощь' : 'Связаться'}</span></button>`}
         </div>
       </div>
     </div></div>`;
@@ -587,6 +588,7 @@ function openDetailModal(id) {
         <div class="min-w-0 pr-2">
           <div class="flex items-center gap-2 flex-wrap"><span class="text-[10px] uppercase tracking-wider bg-tg-accent/10 text-tg-accent px-2.5 py-0.5 rounded-full font-semibold">${catName(s.category)}</span>
             <span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${s.listingType === 'request' ? 'bg-amber-400/15 text-amber-300' : 'bg-emerald-500/10 text-emerald-400'}"><i class="fa-solid ${s.listingType === 'request' ? 'fa-magnifying-glass' : 'fa-handshake'} mr-1"></i>${s.listingType === 'request' ? 'Ищу' : 'Предлагаю'}</span>
+            ${s.listingType === 'request' && s.requestStatus === 'resolved' ? '<span class="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-white/10 text-tg-hint"><i class="fa-solid fa-check mr-1"></i>Решено</span>' : ''}
             <span class="pill"><i class="fa-solid fa-location-dot mr-1"></i>${esc(s.city || 'Минск')}</span></div>
           <h2 class="font-bold text-xl mt-2 leading-snug break-words">${esc(s.name)}</h2>
         </div>
@@ -594,11 +596,11 @@ function openDetailModal(id) {
           ${s.friendPrice ? `<div class="text-xs font-semibold text-emerald-400 mt-0.5"><i class="fa-solid fa-bolt mr-1"></i>${esc(s.friendPrice)}</div>` : ''}</div>
       </div>
       <div class="flex items-center gap-2 bg-tg-card p-2 rounded-2xl border border-white/5">
-        <button onclick="openContact('${u}', event, '${id}')" class="btn flex-1 py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>Связаться в Telegram</span></button>
+        ${s.listingType === 'request' && s.requestStatus === 'resolved' ? '<div class="flex-1 text-center text-xs text-tg-hint py-2.5"><i class="fa-solid fa-check-circle mr-1"></i>Запрос уже решён</div>' : `<button onclick="openContact('${u}', event, '${id}')" class="btn flex-1 py-2.5 shadow-md shadow-tg-button/20"><i class="fa-solid fa-paper-plane"></i><span>${s.listingType === 'request' ? 'Предложить помощь в Telegram' : 'Связаться в Telegram'}</span></button>`}
         <button onclick="shareService('${id}', event)" aria-label="Поделиться объявлением: ${esc(s.name)}" title="Поделиться" class="ibtn !w-10 !h-10 hover:text-tg-accent"><i class="fa-solid fa-share-nodes"></i></button>
         <button onclick="toggleFavorite('${id}', event)" aria-label="${isFav ? 'Убрать из избранного' : 'Добавить в избранное'}: ${esc(s.name)}" title="${isFav ? 'Убрать из избранного' : 'В избранное'}" class="ibtn !w-10 !h-10"><i class="${isFav ? 'fa-solid text-amber-400' : 'fa-regular'} fa-star"></i></button>
         ${isAdmin ? `<button onclick="toggleServiceFeatured('${id}', ${feat}, event)" class="ibtn !w-10 !h-10 ${feat ? '!bg-amber-400 !text-black' : '!text-amber-400'}"><i class="fa-solid fa-crown"></i></button>` : ''}
-        ${manage ? `<button onclick="closeDetailModal(); openEditModal('${id}', event)" class="ibtn !w-10 !h-10"><i class="fa-solid fa-pen"></i></button>
+        ${manage ? `${s.listingType === 'request' ? `<button onclick="toggleRequestResolved('${id}', event)" title="${s.requestStatus === 'resolved' ? 'Снова открыть запрос' : 'Отметить запрос решённым'}" class="ibtn !w-10 !h-10 ${s.requestStatus === 'resolved' ? '!text-emerald-400' : '!text-amber-300'}"><i class="fa-solid ${s.requestStatus === 'resolved' ? 'fa-rotate-left' : 'fa-check'}"></i></button>` : ''}<button onclick="closeDetailModal(); openEditModal('${id}', event)" class="ibtn !w-10 !h-10"><i class="fa-solid fa-pen"></i></button>
           <button onclick="deleteService('${id}', event)" class="ibtn !w-10 !h-10 !bg-red-500/10 !text-red-400"><i class="fa-solid fa-trash"></i></button>` : ''}
       </div>
       <div onclick="openSellerModal('${u}', event)" class="card p-3.5 flex items-center justify-between cursor-pointer">
@@ -705,6 +707,18 @@ async function toggleArchive(id, e) {
   const next = (s.status || 'active') === 'archived' ? (modOn ? 'pending' : 'active') : 'archived';
   try { await updateDoc(doc(db, 'services', id), { status: next }); showToast(next === 'archived' ? "Перенесено в архив" : (next === 'pending' ? "Отправлено на модерацию" : "Возвращено в каталог"), "success"); } catch { showToast("Ошибка", "error"); }
 }
+async function toggleRequestResolved(id, e) {
+  e?.stopPropagation?.();
+  const s = allServices.find(x => x.id === id);
+  if (!s || s.listingType !== 'request' || !(isOwner(s) || isAdmin)) return;
+  const next = s.requestStatus === 'resolved' ? 'open' : 'resolved';
+  try {
+    await updateDoc(doc(db, 'services', id), { requestStatus: next, requestUpdatedAt: Date.now() });
+    showToast(next === 'resolved' ? 'Запрос отмечен решённым' : 'Запрос снова открыт', 'success');
+    if (!$('detailModal').classList.contains('hidden') && $('detailModal').dataset.id === id) openDetailModal(id);
+    rerender();
+  } catch { showToast('Не удалось изменить статус запроса', 'error'); }
+}
 async function approveService(id, e) { e?.stopPropagation?.(); try { await updateDoc(doc(db, 'services', id), { status: 'active' }); showToast("Объявление одобрено!", "success"); } catch { showToast("Ошибка", "error"); } }
 function deleteService(id, e) {
   e?.stopPropagation?.();
@@ -799,6 +813,7 @@ async function saveService(e) {
     const images = await Promise.all(photos.map(uploadImg));
     const data = {
       name: $('serviceName').value.trim(), category: $('serviceCategory').value, city, listingType: $('serviceListingType').value || 'offer',
+      requestStatus: $('serviceListingType').value === 'request' ? (ex?.listingType === 'request' ? (ex.requestStatus || 'open') : 'open') : null,
       status: ex ? (pending ? 'pending' : (ex.status || 'active')) : (pending ? 'pending' : 'active'),
       price: $('servicePrice').value.trim() || "Договорная", friendPrice: $('serviceFriendPrice').value.trim(),
       priceNum: Math.max(0, parseInt($('servicePriceNum').value, 10) || 0),
@@ -975,7 +990,7 @@ async function shareSeller(sid) {
 }
 
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
-  toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
+  toggleServiceFeatured, toggleArchive, toggleRequestResolved, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
