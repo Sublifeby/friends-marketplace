@@ -486,11 +486,18 @@ function renderMyServices() {
   const counts = { all: mine.length, active: mine.filter(x => statusOf(x) === 'active').length,
     pending: mine.filter(x => statusOf(x) === 'pending').length, archived: mine.filter(x => statusOf(x) === 'archived').length };
   const sum = k => mine.reduce((a, x) => a + (Number(x[k]) || 0), 0);
-  $('myStats').innerHTML = mine.length ? `<div class="grid grid-cols-3 gap-2 mb-3">${[['fa-eye','Просмотры','views'],['fa-paper-plane','Обращения','contactClicks'],['fa-star','В избранном','favCount']].map(([i, l, k]) => `<div class="card p-3 text-center"><div class="text-lg font-bold">${sum(k)}</div><div class="text-[10px] text-tg-hint"><i class="fa-solid ${i} mr-1"></i>${l}</div></div>`).join('')}</div>` : '';
+  const statusNotices = [];
+  if (counts.pending) statusNotices.push(`<div class="flex items-start gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs"><i class="fa-solid fa-clock text-amber-400 mt-0.5"></i><div><b class="text-amber-300">На модерации: ${counts.pending}</b><p class="text-tg-hint mt-1">Эти объявления пока видны только вам и администраторам. После проверки они появятся в общем каталоге.</p></div></div>`);
+  if (counts.archived) statusNotices.push(`<div class="flex items-start gap-2 rounded-xl border border-white/10 bg-tg-card p-3 text-xs"><i class="fa-solid fa-box-archive text-tg-hint mt-0.5"></i><div><b>В архиве: ${counts.archived}</b><p class="text-tg-hint mt-1">Архивные объявления скрыты из общего каталога. Их можно восстановить кнопкой с коробкой на карточке.</p></div></div>`);
+  $('myStats').innerHTML = (mine.length ? `<div class="grid grid-cols-3 gap-2 mb-3">${[['fa-eye','Просмотры','views'],['fa-paper-plane','Обращения','contactClicks'],['fa-star','В избранном','favCount']].map(([i, l, k]) => `<div class="card p-3 text-center"><div class="text-lg font-bold">${sum(k)}</div><div class="text-[10px] text-tg-hint"><i class="fa-solid ${i} mr-1"></i>${l}</div></div>`).join('')}</div>` : '') + statusNotices.join('');
   const filters = [['all','Все'],['active','Активные'],['pending','На модерации'],['archived','Архив']];
   $('myServiceFilters').innerHTML = mine.length ? filters.map(([key, label]) => `<button type="button" onclick="setMyServiceFilter('${key}')" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border ${myServiceFilter === key ? 'bg-tg-button text-tg-buttonText border-tg-button' : 'bg-tg-card text-tg-hint border-white/10'}">${label} <span class="opacity-70">${counts[key]}</span></button>`).join('') : '';
   const shown = mine.filter(x => myServiceFilter === 'all' || statusOf(x) === myServiceFilter);
-  $('myServicesList').innerHTML = shown.length ? shown.map(x => renderCard(x) + `<div class="flex items-center justify-between gap-3 text-[11px] text-tg-hint px-2 -mt-2"><div class="flex flex-wrap gap-3"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div><button type="button" onclick="goToMyService('${x.id}')" class="text-tg-accent font-semibold whitespace-nowrap"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Открыть</button></div>`).join('') :
+  $('myServicesList').innerHTML = shown.length ? shown.map(x => {
+    const st = statusOf(x);
+    const hint = st === 'pending' ? `<div class="mx-1 -mt-1 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-tg-hint"><i class="fa-solid fa-hourglass-half text-amber-400 mr-1"></i><b class="text-amber-300">Ожидает проверки.</b> Пока объявление не опубликовано, его можно редактировать или удалить.</div>` : st === 'archived' ? `<div class="mx-1 -mt-1 mb-2 rounded-xl bg-tg-card border border-white/5 p-3 text-xs text-tg-hint"><i class="fa-solid fa-box-archive mr-1"></i>Объявление скрыто из каталога. Нажмите кнопку архива на карточке, чтобы восстановить его.</div>` : '';
+    return renderCard(x) + hint + `<div class="flex items-center justify-between gap-3 text-[11px] text-tg-hint px-2 -mt-2"><div class="flex flex-wrap gap-3"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div><button type="button" onclick="goToMyService('${x.id}')" class="text-tg-accent font-semibold whitespace-nowrap"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Открыть</button></div>`;
+  }).join('') :
     mine.length ? `<div class="text-center py-8 px-4 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><i class="fa-solid ${myServiceFilter === 'archived' ? 'fa-box-archive' : myServiceFilter === 'pending' ? 'fa-clock' : 'fa-store'} text-xl text-tg-hint"></i><p class="text-xs font-medium">${myServiceFilter === 'archived' ? 'В архиве пока нет объявлений' : myServiceFilter === 'pending' ? 'Нет объявлений на модерации' : 'Нет активных объявлений'}</p>${myServiceFilter !== 'all' ? `<button type="button" onclick="setMyServiceFilter('all')" class="text-xs text-tg-accent font-medium">Показать все объявления</button>` : ''}</div>` :
     '<div class="text-center py-12 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><p class="text-xs font-medium">У вас пока нет объявлений</p><button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать первое объявление</button></div>';
 }
@@ -964,8 +971,29 @@ async function initRealtimeSync() {
   onSnapshot(doc(db, 'app_settings', 'config'), d => { if (d.exists()) { globalSettings = d.data(); const t = $('moderationToggle'); if (t) t.checked = !!globalSettings.preModeration; } }, () => {});
 
   // Оптимизация: Запрос до 50 элементов вместо 200
+  let serviceSnapshotReady = false;
+  let previousOwnStatuses = new Map();
   onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(50)), snap => {
-    allServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); servicesLoaded = true;
+    const nextServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() }));
+    if (serviceSnapshotReady && tgUser) {
+      const changes = [];
+      nextServices.forEach(s => {
+        if (!isOwner(s)) return;
+        const oldStatus = previousOwnStatuses.get(s.id), newStatus = s.status || 'active';
+        if (oldStatus && oldStatus !== newStatus) {
+          const title = String(s.name || 'Объявление');
+          if (oldStatus === 'pending' && newStatus === 'active') changes.push(`«${title}» опубликовано после проверки`);
+          else if (oldStatus === 'active' && newStatus === 'pending') changes.push(`«${title}» отправлено на модерацию`);
+          else if (newStatus === 'archived') changes.push(`«${title}» перемещено в архив`);
+          else if (oldStatus === 'archived' && newStatus === 'active') changes.push(`«${title}» снова опубликовано`);
+        }
+      });
+      changes.slice(0, 2).forEach(msg => showToast(msg, 'success'));
+      if (changes.length > 2) showToast(`Изменился статус ещё у ${changes.length - 2} объявлений`, 'info');
+    }
+    previousOwnStatuses = new Map(nextServices.filter(isOwner).map(s => [s.id, s.status || 'active']));
+    serviceSnapshotReady = true;
+    allServices = nextServices; servicesLoaded = true;
     $('totalOffersCount').textContent = allServices.filter(s => (s.status || 'active') === 'active').length;
     rerender(); openDeepLink(); syncVerified();
   }, err => { console.error(err); $('servicesList').innerHTML = '<p class="text-center text-sm text-red-400 py-10">Не удалось загрузить объявления</p>'; });
