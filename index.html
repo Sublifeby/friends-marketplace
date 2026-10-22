@@ -165,6 +165,7 @@ nav button span{font-size:.68rem!important}
         <button onclick="openAddModal()" class="text-xs text-tg-accent font-medium"><i class="fa-solid fa-plus mr-1"></i>Добавить</button>
       </div>
       <div id="myStats"></div>
+      <div id="myServiceFilters" class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Фильтр моих объявлений"></div>
       <div id="myServicesList" class="space-y-3.5"></div>
     </div>
   </section>
@@ -319,7 +320,7 @@ $('referralLinkInput').value = myReferralLink;
 /* ---------- Состояние ---------- */
 let allServices = [], allUsers = [], globalReports = [], me = null, servicesLoaded = false;
 let globalSettings = { preModeration: false }, globalStats = { totalLaunches: 0 };
-let currentCategory = 'all', adminFilter = 'all', activeTab = 'catalog', photos = [], detailImgs = [], deepLinkDone = false;
+let currentCategory = 'all', adminFilter = 'all', myServiceFilter = 'all', activeTab = 'catalog', photos = [], detailImgs = [], deepLinkDone = false;
 let displayLimit = 30; // Оптимизация: Начальный лимит карточек для отображения
 
 /* ---------- Начальная отрисовка UI ---------- */
@@ -470,12 +471,27 @@ function loadMoreServices() {
   renderCatalog();
 }
 
+function setMyServiceFilter(status) {
+  myServiceFilter = status;
+  renderMyServices();
+}
+function goToMyService(id) {
+  switchTab('catalog');
+  openDetailModal(id);
+}
 function renderMyServices() {
   if (!servicesLoaded) return;
   const mine = allServices.filter(isOwner);
-  const sum = k => mine.reduce((a, x) => a + (x[k] || 0), 0);
+  const statusOf = x => x.status || 'active';
+  const counts = { all: mine.length, active: mine.filter(x => statusOf(x) === 'active').length,
+    pending: mine.filter(x => statusOf(x) === 'pending').length, archived: mine.filter(x => statusOf(x) === 'archived').length };
+  const sum = k => mine.reduce((a, x) => a + (Number(x[k]) || 0), 0);
   $('myStats').innerHTML = mine.length ? `<div class="grid grid-cols-3 gap-2 mb-3">${[['fa-eye','Просмотры','views'],['fa-paper-plane','Обращения','contactClicks'],['fa-star','В избранном','favCount']].map(([i, l, k]) => `<div class="card p-3 text-center"><div class="text-lg font-bold">${sum(k)}</div><div class="text-[10px] text-tg-hint"><i class="fa-solid ${i} mr-1"></i>${l}</div></div>`).join('')}</div>` : '';
-  $('myServicesList').innerHTML = mine.length ? mine.map(x => renderCard(x) + `<div class="flex gap-4 text-[11px] text-tg-hint px-2 -mt-2"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div>`).join('') :
+  const filters = [['all','Все'],['active','Активные'],['pending','На модерации'],['archived','Архив']];
+  $('myServiceFilters').innerHTML = mine.length ? filters.map(([key, label]) => `<button type="button" onclick="setMyServiceFilter('${key}')" class="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border ${myServiceFilter === key ? 'bg-tg-button text-tg-buttonText border-tg-button' : 'bg-tg-card text-tg-hint border-white/10'}">${label} <span class="opacity-70">${counts[key]}</span></button>`).join('') : '';
+  const shown = mine.filter(x => myServiceFilter === 'all' || statusOf(x) === myServiceFilter);
+  $('myServicesList').innerHTML = shown.length ? shown.map(x => renderCard(x) + `<div class="flex items-center justify-between gap-3 text-[11px] text-tg-hint px-2 -mt-2"><div class="flex flex-wrap gap-3"><span><i class="fa-solid fa-eye mr-1"></i>${x.views || 0}</span><span><i class="fa-solid fa-paper-plane mr-1"></i>${x.contactClicks || 0}</span><span><i class="fa-solid fa-star mr-1"></i>${x.favCount || 0}</span></div><button type="button" onclick="goToMyService('${x.id}')" class="text-tg-accent font-semibold whitespace-nowrap"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Открыть</button></div>`).join('') :
+    mine.length ? `<div class="text-center py-8 px-4 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><i class="fa-solid ${myServiceFilter === 'archived' ? 'fa-box-archive' : myServiceFilter === 'pending' ? 'fa-clock' : 'fa-store'} text-xl text-tg-hint"></i><p class="text-xs font-medium">${myServiceFilter === 'archived' ? 'В архиве пока нет объявлений' : myServiceFilter === 'pending' ? 'Нет объявлений на модерации' : 'Нет активных объявлений'}</p>${myServiceFilter !== 'all' ? `<button type="button" onclick="setMyServiceFilter('all')" class="text-xs text-tg-accent font-medium">Показать все объявления</button>` : ''}</div>` :
     '<div class="text-center py-12 space-y-2 bg-tg-card/50 rounded-2xl border border-white/5"><p class="text-xs font-medium">У вас пока нет объявлений</p><button onclick="openAddModal()" class="text-xs text-tg-accent font-medium">Создать первое объявление</button></div>';
 }
 let _t; const filterServices = () => { clearTimeout(_t); _t = setTimeout(renderCatalog, 200); };
@@ -896,7 +912,7 @@ async function shareSeller(sid) {
 }
 
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
-  toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, toggleCustomCityInput, appendTagPreset, removePhoto,
+  toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
