@@ -267,6 +267,7 @@ $('referralLinkInput').value = myReferralLink;
 let allServices = [], allUsers = [], globalReports = [], me = null, servicesLoaded = false;
 let globalSettings = { preModeration: false }, globalStats = { totalLaunches: 0 };
 let currentCategory = 'all', adminFilter = 'all', activeTab = 'catalog', photos = [], detailImgs = [], deepLinkDone = false;
+let displayLimit = 30; // Оптимизация: Начальный лимит карточек для отображения
 
 /* ---------- Начальная отрисовка UI ---------- */
 $('citySelect').innerHTML = '<option value="all">Все города</option>' + CITIES.map(c => `<option>${c}</option>`).join('');
@@ -392,9 +393,21 @@ function renderCatalog() {
     if (sort === 'price_desc') return num(b) - num(a);
     return (b.createdAt || 0) - (a.createdAt || 0);
   });
-  $('servicesList').innerHTML = list.length ? list.map(renderCard).join('') :
-    '<div class="text-center py-16 space-y-2"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid fa-box-open"></i></div><p class="text-sm font-medium">Нет объявлений по данному запросу</p></div>';
+
+  // Оптимизация: Подгрузка пагинацией
+  const slicedList = list.slice(0, displayLimit);
+  const hasMore = list.length > displayLimit;
+
+  $('servicesList').innerHTML = (slicedList.length ? slicedList.map(renderCard).join('') :
+    '<div class="text-center py-16 space-y-2"><div class="w-12 h-12 rounded-2xl bg-tg-card flex items-center justify-center mx-auto text-tg-hint text-xl"><i class="fa-solid fa-box-open"></i></div><p class="text-sm font-medium">Нет объявлений по данному запросу</p></div>') +
+    (hasMore ? `<div class="pt-2 pb-6 text-center"><button onclick="loadMoreServices()" class="btn mx-auto px-6 py-2.5 bg-tg-card text-tg-text border border-white/10 shadow-md"><i class="fa-solid fa-angles-down mr-1"></i>Загрузить еще (${list.length - displayLimit})</button></div>` : '');
 }
+
+function loadMoreServices() {
+  displayLimit += 30;
+  renderCatalog();
+}
+
 function renderMyServices() {
   if (!servicesLoaded) return;
   const mine = allServices.filter(isOwner);
@@ -564,17 +577,22 @@ function renderPhotos() {
   $('uploadStatus').textContent = photos.length ? `Загружено ${photos.length} из 5 фото` : "Выбрать фото с устройства";
 }
 function removePhoto(i) { photos.splice(i, 1); renderPhotos(); }
+
+// Оптимизация: Конвертация в WebP для экономии места и трафика
 function compress(file) {
-  return new Promise(res => {
+  return new Response(file).arrayBuffer().then(() => new Promise(res => {
     const fr = new FileReader();
     fr.onload = () => { const im = new Image();
       im.onload = () => { const M = 800; let w = im.width, h = im.height;
         if (w > h) { if (w > M) { h *= M / w; w = M; } } else if (h > M) { w *= M / h; h = M; }
-        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); res(c.toDataURL('image/jpeg', 0.7)); };
+        const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, 0, 0, w, h); 
+        res(c.toDataURL('image/webp', 0.7)); 
+      };
       im.onerror = () => res(null); im.src = fr.result; };
     fr.onerror = () => res(null); fr.readAsDataURL(file);
-  });
+  }));
 }
+
 async function handleMultiImagesUpload(e) {
   const files = [...e.target.files].slice(0, 5 - photos.length); if (!files.length) return;
   $('uploadStatus').textContent = "Сжатие изображений...";
@@ -583,7 +601,7 @@ async function handleMultiImagesUpload(e) {
 }
 async function uploadImg(src) {
   if (!src.startsWith('data:')) return src;
-  const r = ref(storage, `services/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`);
+  const r = ref(storage, `services/${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`);
   await uploadString(r, src, 'data_url', { cacheControl: 'public,max-age=31536000' });
   return await getDownloadURL(r);
 }
@@ -795,7 +813,7 @@ function shareSeller(sid) {
 W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, approveService, deleteService, submitReport, setSearchTag, selectCategory, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
-  exportUsersToCSV, filterServices, renderCatalog, claimReward, resolveClaim, rateSeller, shareSeller });
+  exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
 /* ---------- Firebase sync ---------- */
 function openDeepLink() {
@@ -844,7 +862,8 @@ async function initRealtimeSync() {
   if (isAdmin) onSnapshot(doc(db, 'app_stats', 'general'), d => { if (d.exists()) { globalStats = d.data(); renderAdminPanel(); } });
   onSnapshot(doc(db, 'app_settings', 'config'), d => { if (d.exists()) { globalSettings = d.data(); const t = $('moderationToggle'); if (t) t.checked = !!globalSettings.preModeration; } }, () => {});
 
-  onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(200)), snap => {
+  // Оптимизация: Запрос до 50 элементов вместо 200
+  onSnapshot(query(collection(db, 'services'), orderBy('createdAt', 'desc'), limit(50)), snap => {
     allServices = snap.docs.filter(okId).map(d => ({ id: d.id, ...d.data() })); servicesLoaded = true;
     $('totalOffersCount').textContent = allServices.filter(s => (s.status || 'active') === 'active').length;
     rerender(); openDeepLink(); syncVerified();
