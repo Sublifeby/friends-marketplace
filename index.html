@@ -117,6 +117,55 @@ nav button.text-tg-accent{background:linear-gradient(135deg,rgba(41,211,194,.14)
 nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;right:35%;height:2px;border-radius:2px;background:var(--sublife-teal)}
 @media(min-width:640px){.club-hero{min-height:270px;padding:1.6rem 1.8rem}.club-hero-mark{right:30px;bottom:12px;font-size:9rem}}
 @media(max-width:360px){.club-hero{padding:1rem}.club-hero h2{font-size:1.65rem}.club-action{font-size:.72rem;gap:.4rem}.club-hero-mark{right:-30px;font-size:5rem}}
+/* SUBLIFE polish pass — главная и карточки */
+.club-hero{border-radius:1.65rem!important;position:relative;overflow:hidden}
+.club-hero:after{content:"";position:absolute;inset:auto 0 0;height:38%;z-index:0;background:linear-gradient(0deg,rgba(3,15,25,.24),transparent);pointer-events:none}
+.club-hero .relative.z-10{z-index:2}
+.club-hero .inline-flex{backdrop-filter:blur(8px);box-shadow:inset 0 1px rgba(255,255,255,.06)}
+.club-hero h2{letter-spacing:-.045em;text-wrap:balance}
+.club-hero p{max-width:19rem;color:#c4d4de}
+.club-action{position:relative;overflow:hidden;letter-spacing:-.01em}
+.club-action-primary{background:linear-gradient(115deg,#43e0cd,#18b6aa);box-shadow:0 8px 24px rgba(41,211,194,.2),inset 0 1px rgba(255,255,255,.35)}
+.club-action-secondary{background:rgba(4,20,31,.38);border-color:rgba(194,235,239,.22);backdrop-filter:blur(8px)}
+.club-action-secondary:hover{border-color:rgba(41,211,194,.55);background:rgba(41,211,194,.08)}
+.club-feed-heading{margin-top:.15rem}
+.club-feed-heading h2{letter-spacing:-.035em}
+.club-member-mark{box-shadow:inset 0 1px rgba(255,255,255,.04)}
+#servicesList{align-items:stretch}
+#servicesList>.card{position:relative;isolation:isolate;border-radius:1.3rem!important;overflow:hidden;background:linear-gradient(145deg,rgba(19,48,65,.98),var(--c-card) 58%)!important}
+#servicesList>.card:before{content:"";position:absolute;inset:0 0 auto;height:1px;background:linear-gradient(90deg,transparent,rgba(87,226,211,.3),transparent);z-index:2;pointer-events:none}
+#servicesList .service-media{height:clamp(158px,45vw,225px);border-bottom:1px solid rgba(255,255,255,.075);background-color:#0b2433}
+#servicesList .service-media:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(0deg,rgba(4,17,27,.22),transparent);pointer-events:none}
+#servicesList .service-media img{object-position:center;filter:saturate(.94)}
+#servicesList .service-placeholder{background:radial-gradient(circle at 50% 35%,rgba(41,211,194,.11),transparent 50%)}
+#servicesList .p-4{gap:.85rem!important;padding:1rem 1rem 1.05rem}
+#servicesList .p-4>div:first-child{gap:.65rem}
+#servicesList .p-4>div:first-child>div:first-child{line-height:1.35}
+#servicesList h3{font-size:1.02rem;line-height:1.34;letter-spacing:-.025em;text-wrap:pretty}
+#servicesList .pill{border:1px solid rgba(255,255,255,.075);border-radius:999px;padding:.18rem .48rem;font-size:9px;white-space:nowrap}
+#servicesList .text-emerald-400{color:#49dfb0!important}
+#servicesList .border-t{padding-top:.8rem;margin-top:.15rem}
+#servicesList .border-t .btn{min-height:2.3rem;padding-inline:.8rem;border-radius:.8rem;font-size:.7rem}
+#servicesList .ibtn{width:2.2rem;height:2.2rem;border-radius:.8rem}
+#servicesList .tag-link{border-radius:999px;padding:.2rem .55rem}
+#servicesList .vip{z-index:3;box-shadow:0 4px 14px rgba(255,176,64,.18)}
+#catalogResultsCount{font-weight:550;letter-spacing:.01em}
+#clearCatalogFilters{padding:.35rem .55rem;border-radius:999px;background:rgba(41,211,194,.08)}
+.club-stats-strip{box-shadow:inset 0 1px rgba(255,255,255,.035)}
+@media(min-width:640px){
+  .club-hero{min-height:285px}
+  #servicesList>.card{align-self:stretch}
+  #servicesList .service-media{height:205px}
+  #servicesList .p-4{padding:1.1rem}
+}
+@media(max-width:390px){
+  .club-hero{min-height:0}
+  .club-hero .mt-4{margin-top:.85rem}
+  .club-hero .mt-5{margin-top:1rem}
+  .club-action{min-height:44px;padding-inline:.45rem}
+  #servicesList .p-4{padding:.85rem}
+  #servicesList .border-t .btn{padding-inline:.55rem}
+}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 </style>
