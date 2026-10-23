@@ -89,6 +89,34 @@ nav button span{font-size:.68rem!important}
 #serviceForm label{font-weight:600;letter-spacing:.01em}
 #photosPreviewGrid img{border-radius:.7rem}
 @media(min-width:640px){#servicesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}#servicesList>*{margin-top:0!important}#servicesList>.card{height:100%;display:flex;flex-direction:column}#servicesList>.card>.service-media{flex-shrink:0}#servicesList>.card>.p-4{display:flex;flex:1;flex-direction:column}#servicesList>.card>.p-4>.border-t{margin-top:auto}#servicesList>div:not(.card){grid-column:1/-1}}
+/* Главный экран: фирменный SUBLIFE + ощущение закрытого клуба */
+:root{--sublife-deep:#071b2a;--sublife-panel:#10283a;--sublife-teal:#29d3c2;--sublife-orange:#ff9a55}
+.text-tg-accent{color:var(--sublife-teal)!important}
+.club-hero{isolation:isolate;min-height:250px;background:linear-gradient(118deg,#071b2a 0%,#0b2c3d 54%,#103f4a 100%);border:1px solid rgba(83,220,207,.2);box-shadow:0 16px 38px rgba(0,0,0,.18)}
+.club-hero:before{content:"";position:absolute;inset:0;z-index:-1;opacity:.18;background-image:radial-gradient(rgba(165,243,235,.7) .7px,transparent .7px);background-size:16px 16px;mask-image:linear-gradient(110deg,#000,transparent 78%)}
+.club-hero-glow{position:absolute;z-index:-1;width:220px;height:220px;right:-65px;top:25px;border-radius:50%;background:radial-gradient(circle,rgba(41,211,194,.22),rgba(41,211,194,0) 68%);pointer-events:none}
+.club-live-dot{width:6px;height:6px;border-radius:50%;background:var(--sublife-teal);box-shadow:0 0 0 4px rgba(41,211,194,.12)}
+.club-gradient-text{background:linear-gradient(90deg,#62f0df,#ffb37b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.club-action{display:flex;align-items:center;justify-content:center;gap:.55rem;min-height:46px;padding:.75rem .6rem;border-radius:14px;font-size:.78rem;font-weight:750;transition:transform .18s,filter .18s,border-color .18s}
+.club-action:active{transform:scale(.97)}
+.club-action-primary{background:linear-gradient(115deg,#2bd4c2,#16a99f);color:#06252c;box-shadow:0 8px 22px rgba(41,211,194,.17)}
+.club-action-secondary{background:rgba(255,255,255,.065);color:#f3fbff;border:1px solid rgba(255,255,255,.15)}
+.club-action-secondary i{color:#ffab6c}
+.club-hero-mark{position:absolute;right:18px;bottom:16px;color:rgba(118,233,222,.08);font-size:7rem;transform:rotate(-12deg);pointer-events:none}
+.club-eyebrow{font-size:9px;letter-spacing:.2em;font-weight:800;color:var(--sublife-teal)}
+.club-member-mark{font-size:10px;font-weight:700;color:#9eece3;border:1px solid rgba(41,211,194,.18);background:rgba(41,211,194,.07);border-radius:999px;padding:.4rem .65rem;white-space:nowrap}
+.club-stats-strip{display:flex;align-items:center;gap:.8rem;padding:.9rem 1rem;border-radius:1.2rem;border:1px solid var(--ui-line);background:linear-gradient(100deg,rgba(41,211,194,.07),rgba(16,40,58,.5) 58%,rgba(255,154,85,.045));}
+.club-stats-icon{width:2.65rem;height:2.65rem;display:grid;place-items:center;border-radius:14px;background:rgba(41,211,194,.12);color:var(--sublife-teal);font-size:1.1rem;flex-shrink:0}
+.club-stats-divider{height:2.25rem;width:1px;background:var(--ui-line)}
+.club-stats-note{display:flex;align-items:center;flex-direction:column;font-size:9px;font-weight:700;line-height:1.15;text-align:center;color:#b8c7d3;min-width:46px}
+#servicesList>.card{background:linear-gradient(155deg,color-mix(in srgb,var(--c-card) 96%,#15394b),var(--c-card) 72%)}
+#servicesList .service-media{border-bottom:1px solid rgba(255,255,255,.04)}
+#servicesList .pill{background:rgba(255,255,255,.055)}
+nav{background:rgba(7,20,31,.94)!important;border-top-color:rgba(115,223,213,.15)!important;box-shadow:0 -10px 35px rgba(0,0,0,.22)!important}
+nav button.text-tg-accent{background:linear-gradient(135deg,rgba(41,211,194,.14),rgba(41,211,194,.045));box-shadow:inset 0 0 0 1px rgba(41,211,194,.08)}
+nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;right:35%;height:2px;border-radius:2px;background:var(--sublife-teal)}
+@media(min-width:640px){.club-hero{min-height:270px;padding:1.6rem 1.8rem}.club-hero-mark{right:30px;bottom:12px;font-size:9rem}}
+@media(max-width:360px){.club-hero{padding:1rem}.club-hero h2{font-size:1.65rem}.club-action{font-size:.72rem;gap:.4rem}.club-hero-mark{right:-30px;font-size:5rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 </style>
@@ -108,8 +136,29 @@ nav button span{font-size:.68rem!important}
 </header>
 
 <main class="px-4 py-4 max-w-2xl mx-auto">
-  <!-- Каталог -->
-  <section id="tabCatalog" class="space-y-4">
+  <!-- Главная лента клуба -->
+  <section id="tabCatalog" class="space-y-5">
+    <div class="club-hero relative overflow-hidden rounded-[1.6rem] p-5 sm:p-6">
+      <div class="club-hero-glow" aria-hidden="true"></div>
+      <div class="relative z-10">
+        <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.06] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.16em] text-teal-200">
+          <span class="club-live-dot"></span> SUBLIFE · КЛУБ ДЛЯ СВОИХ
+        </div>
+        <h2 class="mt-4 max-w-sm text-[1.8rem] font-extrabold leading-[1.08] tracking-tight sm:text-3xl">Свои помогают <span class="club-gradient-text">своим.</span></h2>
+        <p class="mt-2 max-w-sm text-sm leading-relaxed text-slate-300">Находите нужные контакты, делитесь опытом и предлагайте услуги внутри клуба.</p>
+        <div class="mt-5 grid grid-cols-2 gap-2.5">
+          <button type="button" onclick="setCatalogIntent('offer')" class="club-action club-action-primary"><i class="fa-solid fa-magnifying-glass"></i><span>Найти помощь</span></button>
+          <button type="button" onclick="openAddModal()" class="club-action club-action-secondary"><i class="fa-solid fa-plus"></i><span>Предложить</span></button>
+        </div>
+      </div>
+      <div class="club-hero-mark" aria-hidden="true"><i class="fa-solid fa-people-group"></i></div>
+    </div>
+
+    <div class="club-feed-heading flex items-end justify-between gap-3 px-0.5">
+      <div><p class="club-eyebrow">СООБЩЕСТВО</p><h2 class="mt-1 text-lg font-bold tracking-tight">Лента клуба</h2><p class="mt-0.5 text-xs text-tg-hint">Свежие объявления участников</p></div>
+      <div class="club-member-mark"><i class="fa-solid fa-shield-heart mr-1.5"></i>Для своих</div>
+    </div>
+
     <div class="space-y-2.5">
       <div class="flex space-x-2">
         <div class="relative flex-1">
@@ -135,12 +184,11 @@ nav button span{font-size:.68rem!important}
         <button type="button" id="clearCatalogFilters" onclick="clearCatalogFilters()" class="hidden text-tg-accent font-semibold whitespace-nowrap"><i class="fa-solid fa-rotate-left mr-1"></i>Сбросить фильтры</button>
       </div>
     </div>
-    <div class="card p-3.5 flex items-center justify-between text-xs">
-      <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 rounded-xl bg-tg-accent/10 text-tg-accent flex items-center justify-center"><i class="fa-solid fa-handshake"></i></div>
-        <div><div class="text-tg-hint font-medium">Активных предложений</div><div id="totalOffersCount" class="text-sm font-bold">0</div></div>
-      </div>
-      <div class="text-right"><div class="text-tg-hint">Скидка для участников</div><div class="text-emerald-400 font-bold">до −99%</div></div>
+    <div class="club-stats-strip">
+      <div class="club-stats-icon"><i class="fa-solid fa-handshake-angle"></i></div>
+      <div class="min-w-0 flex-1"><div class="text-[11px] text-tg-hint font-medium">Активных предложений</div><div id="totalOffersCount" class="text-lg font-extrabold leading-tight">0</div></div>
+      <div class="club-stats-divider"></div>
+      <div class="club-stats-note"><i class="fa-solid fa-lock mb-1.5 text-teal-300"></i><span>Круг<br>своих</span></div>
     </div>
     <div id="servicesList" class="space-y-3.5"><div class="text-center py-12 text-tg-hint text-sm"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><p>Загрузка предложений...</p></div></div>
   </section>
@@ -217,7 +265,7 @@ nav button span{font-size:.68rem!important}
 </main>
 
 <nav class="fixed bottom-0 left-0 right-0 bg-tg-bg/95 backdrop-blur-md border-t border-white/5 px-6 py-2.5 flex justify-around items-center z-40 max-w-2xl mx-auto">
-  <button type="button" aria-label="Каталог объявлений" aria-current="page" onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-store text-lg"></i><span class="text-[10px] font-medium">Каталог</span></button>
+  <button type="button" aria-label="Каталог объявлений" aria-current="page" onclick="switchTab('catalog')" id="navCatalog" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-compass text-lg"></i><span class="text-[10px] font-medium">Лента</span></button>
   <button type="button" aria-label="Мой профиль" onclick="switchTab('profile')" id="navProfile" class="flex flex-col items-center space-y-1"><i class="fa-solid fa-user text-lg"></i><span class="text-[10px] font-medium">Профиль</span></button>
   <button type="button" aria-label="Панель администратора" onclick="switchTab('admin')" id="navAdmin" class="flex-col items-center space-y-1 hidden"><i class="fa-solid fa-shield text-lg"></i><span class="text-[10px] font-medium">Админ</span></button>
 </nav>
@@ -458,6 +506,14 @@ function clearCatalogFilters() {
   lastCatalogFilterKey = '';
   displayLimit = 30;
   renderCatalog();
+}
+function setCatalogIntent(type) {
+  const filter = $('listingTypeFilter');
+  if (filter) filter.value = type || 'all';
+  switchTab('catalog');
+  renderCatalog();
+  $('searchInput')?.focus({ preventScroll: true });
+  window.setTimeout(() => $('searchInput')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
 }
 function renderCatalog() {
   if (!servicesLoaded) return;
@@ -1014,7 +1070,7 @@ async function shareSeller(sid) {
   catch { window.open(telegramShareUrl, '_blank', 'noopener,noreferrer'); }
 }
 
-W({ switchTab, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
+W({ switchTab, setCatalogIntent, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, toggleRequestResolved, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
