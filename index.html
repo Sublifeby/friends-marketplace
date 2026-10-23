@@ -249,10 +249,9 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
   <section id="tabProfile" class="space-y-4 hidden">
     <div class="card p-4 flex items-center space-x-3">
       <div id="profileBigAvatar" class="w-14 h-14 rounded-full bg-tg-button flex items-center justify-center font-bold text-xl text-tg-buttonText overflow-hidden flex-shrink-0"><i class="fa-solid fa-user"></i></div>
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0">
         <div class="flex items-center space-x-1.5"><h2 id="profileBigName" class="font-bold text-base truncate">Загрузка...</h2><span id="userBadgeProfile"></span></div>
         <p id="profileBigUsername" class="text-xs text-tg-hint"></p>
-        <button type="button" onclick="shareSeller(String(currentUser.id))" class="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-tg-accent/30 bg-tg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-tg-accent"><i class="fa-solid fa-share-nodes"></i> Поделиться профилем</button>
       </div>
     </div>
     <div class="bg-gradient-to-br from-tg-card to-tg-button/10 rounded-2xl p-4 border border-tg-accent/20 space-y-3">
@@ -742,34 +741,22 @@ function closeDetailModal(e) { e?.stopPropagation?.(); $('detailModal').classLis
 
 /* ---------- Профиль продавца ---------- */
 function openSellerModal(username, e) {
-  e?.stopPropagation?.();
-  if (!username) return;
-  openSellerProfile(String(username), '');
-}
-function openSellerById(sid) {
-  if (!sid) return;
-  openSellerProfile('', String(sid));
-}
-function openSellerProfile(username, requestedSid) {
-  const k = String(username || '').toLowerCase();
-  const all = allServices.filter(s => requestedSid
-    ? String(s.authorId) === requestedSid
-    : (s.authorUsername || '').toLowerCase() === k);
-  if (!all.length) { showToast('У участника пока нет объявлений', 'info'); return; }
+  e?.stopPropagation?.(); if (!username) return;
+  const k = username.toLowerCase();
+  const all = allServices.filter(s => (s.authorUsername || '').toLowerCase() === k);
   const list = all.filter(s => (s.status || 'active') === 'active');
-  const sid = requestedSid || String(all[0]?.authorId || '');
-  const sellerUsername = username || all.find(s => s.authorUsername)?.authorUsername || '';
-  const verified = list.some(s => s.authorVerified) || allUsers.some(u => String(u.id) === sid && u.isVerified) || allUsers.some(u => (u.username || '').toLowerCase() === k && u.isVerified);
+  const sid = String(all[0]?.authorId || '');
+  const verified = list.some(s => s.authorVerified) || allUsers.some(u => (u.username || '').toLowerCase() === k && u.isVerified);
   $('sellerContent').dataset.sid = sid;
   $('sellerContent').innerHTML = `
     <div class="flex items-center justify-between mb-1">
-      <div class="flex items-center gap-2 min-w-0"><h3 class="font-bold text-base truncate">${sellerUsername ? '@' + esc(sellerUsername) : 'Участник клуба'}</h3>${badge(verified)}</div>
-      <button onclick="closeSellerModal()" class="ibtn !w-8 !h-8 !rounded-full !bg-tg-card" aria-label="Закрыть профиль"><i class="fa-solid fa-xmark"></i></button>
+      <div class="flex items-center gap-2 min-w-0"><h3 class="font-bold text-base truncate">@${esc(username)}</h3>${badge(verified)}</div>
+      <button onclick="closeSellerModal()" class="ibtn !w-8 !h-8 !rounded-full !bg-tg-card"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div id="sellerMeta" class="text-xs text-tg-hint mb-3">Активных объявлений: ${list.length}</div>
+    <div id="sellerMeta" class="text-xs text-tg-hint mb-3">Объявлений: ${list.length}</div>
     <div class="flex gap-2 mb-3">
-      ${sellerUsername ? `<button onclick="openContact('${safe(sellerUsername)}', event)" class="btn flex-1 py-2.5"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>` : '<p class="text-xs text-tg-hint flex-1 py-2">Участник не указал username Telegram для связи через профиль.</p>'}
-      ${sid ? `<button onclick="shareSeller('${safe(sid)}')" class="ibtn !w-11 !h-11" title="Поделиться профилем" aria-label="Поделиться профилем"><i class="fa-solid fa-share-nodes"></i></button>` : ''}
+      <button onclick="openContact('${safe(username)}', event)" class="btn flex-1 py-2.5"><i class="fa-solid fa-paper-plane"></i><span>Написать</span></button>
+      ${sid ? `<button onclick="shareSeller('${safe(sid)}')" class="ibtn !w-11 !h-11" title="Поделиться профилем"><i class="fa-solid fa-share-nodes"></i></button>` : ''}
     </div>
     <div id="sellerRate"></div>
     <div class="space-y-3">${list.length ? list.map(renderCard).join('') : '<p class="text-xs text-tg-hint text-center py-6">Нет активных объявлений</p>'}</div>`;
@@ -1141,54 +1128,30 @@ async function rateSeller(sid, v) {
   } catch { showToast("Не удалось сохранить оценку", "error"); }
 }
 async function shareSeller(sid) {
-  sid = String(sid || '').trim();
-  if (!sid) return showToast('Не удалось определить профиль участника', 'error');
-
-  const link = APP_SHORT_NAME
-    ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${encodeURIComponent(sid)}`
-    : `https://t.me/${BOT_USERNAME}?startapp=seller_${encodeURIComponent(sid)}`;
+  const link = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${encodeURIComponent(sid)}` : `https://t.me/${BOT_USERNAME}?startapp=seller_${encodeURIComponent(sid)}`;
   const title = 'Профиль участника клуба SUBLIFE';
-  const message = 'Посмотри профиль участника в закрытом клубе SUBLIFE для своих!';
-  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
-
-  // В Telegram сначала открываем штатное окно выбора чата. Если WebView не поддержал действие,
-  // пробуем системное меню, затем копирование ссылки.
-  if (tg?.openTelegramLink) {
-    try { tg.openTelegramLink(telegramShareUrl); return; }
-    catch (err) { console.warn('Telegram share failed:', err); }
-  }
+  const text = 'Посмотри профиль участника в закрытом клубе SUBLIFE для своих!';
+  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
+  if (tg?.openTelegramLink) { tg.openTelegramLink(telegramShareUrl); return; }
   if (navigator.share) {
-    try { await navigator.share({ title, text: message, url: link }); return; }
+    try { await navigator.share({ title, text, url: link }); return; }
     catch (err) { if (err?.name === 'AbortError') return; }
   }
-  try {
-    if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
-    await navigator.clipboard.writeText(link);
-    showToast('Ссылка на профиль скопирована', 'success');
-  } catch (err) {
-    console.warn('Clipboard failed:', err);
-    try {
-      if (tg?.openLink) tg.openLink(telegramShareUrl);
-      else window.open(telegramShareUrl, '_blank', 'noopener,noreferrer');
-    } catch {
-      showToast('Не удалось открыть отправку. Скопируйте ссылку вручную: ' + link, 'error');
-    }
-  }
+  try { await navigator.clipboard.writeText(link); showToast('Ссылка на профиль скопирована', 'success'); }
+  catch { window.open(telegramShareUrl, '_blank', 'noopener,noreferrer'); }
 }
 
 W({ switchTab, setCatalogIntent, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, toggleRequestResolved, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
   handleMultiImagesUpload, updateFormCounters, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
-  exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller, openSellerById });
+  exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
 /* ---------- Firebase sync ---------- */
 function openDeepLink() {
-  // Поддерживаем и Telegram start_param, и URL-параметр при открытии ссылки в обычном браузере.
-  const params = new URLSearchParams(window.location.search);
-  const p = tg?.initDataUnsafe?.start_param || params.get('startapp') || params.get('start') || '';
+  const p = tg?.initDataUnsafe?.start_param || '';
   if (deepLinkDone) return;
   if (p.startsWith('service_')) { const id = p.slice(8); if (allServices.some(x => x.id === id)) { deepLinkDone = true; openDetailModal(id); } }
-  else if (p.startsWith('seller_')) { const sid = p.slice(7); if (allServices.some(v => String(v.authorId) === sid)) { deepLinkDone = true; openSellerById(sid); } }
+  else if (p.startsWith('seller_')) { const x = allServices.find(v => String(v.authorId) === p.slice(7) && v.authorUsername); if (x) { deepLinkDone = true; openSellerModal(x.authorUsername); } }
 }
 
 const syncedV = new Set();
