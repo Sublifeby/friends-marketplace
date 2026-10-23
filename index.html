@@ -1141,17 +1141,39 @@ async function rateSeller(sid, v) {
   } catch { showToast("Не удалось сохранить оценку", "error"); }
 }
 async function shareSeller(sid) {
-  const link = APP_SHORT_NAME ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${encodeURIComponent(sid)}` : `https://t.me/${BOT_USERNAME}?startapp=seller_${encodeURIComponent(sid)}`;
+  sid = String(sid || '').trim();
+  if (!sid) return showToast('Не удалось определить профиль участника', 'error');
+
+  const link = APP_SHORT_NAME
+    ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=seller_${encodeURIComponent(sid)}`
+    : `https://t.me/${BOT_USERNAME}?startapp=seller_${encodeURIComponent(sid)}`;
   const title = 'Профиль участника клуба SUBLIFE';
-  const text = 'Посмотри профиль участника в закрытом клубе SUBLIFE для своих!';
-  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
-  if (tg?.openTelegramLink) { tg.openTelegramLink(telegramShareUrl); return; }
+  const message = 'Посмотри профиль участника в закрытом клубе SUBLIFE для своих!';
+  const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(message)}`;
+
+  // В Telegram сначала открываем штатное окно выбора чата. Если WebView не поддержал действие,
+  // пробуем системное меню, затем копирование ссылки.
+  if (tg?.openTelegramLink) {
+    try { tg.openTelegramLink(telegramShareUrl); return; }
+    catch (err) { console.warn('Telegram share failed:', err); }
+  }
   if (navigator.share) {
-    try { await navigator.share({ title, text, url: link }); return; }
+    try { await navigator.share({ title, text: message, url: link }); return; }
     catch (err) { if (err?.name === 'AbortError') return; }
   }
-  try { await navigator.clipboard.writeText(link); showToast('Ссылка на профиль скопирована', 'success'); }
-  catch { window.open(telegramShareUrl, '_blank', 'noopener,noreferrer'); }
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+    await navigator.clipboard.writeText(link);
+    showToast('Ссылка на профиль скопирована', 'success');
+  } catch (err) {
+    console.warn('Clipboard failed:', err);
+    try {
+      if (tg?.openLink) tg.openLink(telegramShareUrl);
+      else window.open(telegramShareUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      showToast('Не удалось открыть отправку. Скопируйте ссылку вручную: ' + link, 'error');
+    }
+  }
 }
 
 W({ switchTab, setCatalogIntent, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
@@ -1161,7 +1183,9 @@ W({ switchTab, setCatalogIntent, openDetailModal, closeDetailModal, setGalleryIm
 
 /* ---------- Firebase sync ---------- */
 function openDeepLink() {
-  const p = tg?.initDataUnsafe?.start_param || '';
+  // Поддерживаем и Telegram start_param, и URL-параметр при открытии ссылки в обычном браузере.
+  const params = new URLSearchParams(window.location.search);
+  const p = tg?.initDataUnsafe?.start_param || params.get('startapp') || params.get('start') || '';
   if (deepLinkDone) return;
   if (p.startsWith('service_')) { const id = p.slice(8); if (allServices.some(x => x.id === id)) { deepLinkDone = true; openDetailModal(id); } }
   else if (p.startsWith('seller_')) { const sid = p.slice(7); if (allServices.some(v => String(v.authorId) === sid)) { deepLinkDone = true; openSellerById(sid); } }
