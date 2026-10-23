@@ -168,6 +168,9 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
+.field-counter{margin-top:.3rem;text-align:right;font-size:10px;color:var(--tg-hint,#94a3b8)}
+#serviceForm .inp:focus-visible,#searchInput:focus-visible,#citySelect:focus-visible,#listingTypeFilter:focus-visible,#sortSelect:focus-visible,#minPriceInput:focus-visible,#maxPriceInput:focus-visible{outline:2px solid rgba(45,212,191,.7);outline-offset:1px}
+#serviceForm .inp:invalid:not(:placeholder-shown){border-color:rgba(248,113,113,.65)}
 </style>
 </head>
 <body>
@@ -212,7 +215,7 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
       <div class="flex space-x-2">
         <div class="relative flex-1">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-tg-hint text-sm"></i>
-          <input type="text" id="searchInput" oninput="filterServices()" placeholder="Поиск услуг, товаров, тегов..." class="inp !pl-10">
+          <input type="text" id="searchInput" oninput="filterServices()" autocomplete="off" placeholder="Поиск услуг, товаров, тегов..." class="inp !pl-10">
         </div>
         <select id="citySelect" onchange="renderCatalog()" class="sm-inp max-w-[110px] truncate"></select>
       </div>
@@ -223,8 +226,8 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
         <select id="sortSelect" onchange="renderCatalog()" aria-label="Сортировка объявлений" class="sm-inp">
           <option value="newest">Новые</option><option value="relevant">По совпадению</option><option value="price_asc">Дешевле</option><option value="price_desc">Дороже</option>
         </select>
-        <input type="number" min="0" id="minPriceInput" oninput="filterServices()" placeholder="Цена от" aria-label="Минимальная цена" class="sm-inp">
-        <input type="number" min="0" id="maxPriceInput" oninput="filterServices()" placeholder="Цена до" aria-label="Максимальная цена" class="sm-inp">
+        <input type="number" min="0" id="minPriceInput" oninput="filterServices()" inputmode="numeric" step="1" placeholder="Цена от, BYN" aria-label="Минимальная цена" class="sm-inp">
+        <input type="number" min="0" id="maxPriceInput" oninput="filterServices()" inputmode="numeric" step="1" placeholder="Цена до, BYN" aria-label="Максимальная цена" class="sm-inp">
       </div>
       <div id="quickTags" class="flex space-x-1.5 overflow-x-auto hide-scrollbar pb-0.5"></div>
       <div id="categoryChips" class="flex space-x-2 overflow-x-auto hide-scrollbar pb-1"></div>
@@ -331,7 +334,7 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
     <form id="serviceForm" onsubmit="saveService(event)" class="space-y-3.5">
       <input type="hidden" id="editServiceId">
       <div><label class="block text-xs text-tg-hint mb-1">Название услуги или товара</label>
-        <input type="text" id="serviceName" required maxlength="100" placeholder="Например: Ремонт телефонов" class="inp"></div>
+        <input type="text" id="serviceName" required maxlength="100" oninput="updateFormCounters()" placeholder="Например: Ремонт телефонов" class="inp"><p class="field-counter"><span id="serviceNameCount">0</span>/100 символов</p></div>
       <div><label class="block text-xs text-tg-hint mb-1">Что вы хотите разместить?</label>
         <select id="serviceListingType" class="inp"><option value="offer">Предлагаю услугу / товар</option><option value="request">Ищу услугу / товар</option></select>
         <p class="text-[10px] text-tg-hint mt-1">«Ищу» поможет участникам понять, что вам нужна помощь или конкретная вещь.</p></div>
@@ -354,9 +357,9 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
         <input type="text" id="serviceTags" maxlength="120" placeholder="аренда, юрист, ремонт" class="inp">
         <div id="presetTags" class="flex flex-wrap gap-1.5 mt-2"></div></div>
       <div><label class="block text-xs text-tg-hint mb-1">Краткое описание (в каталоге)</label>
-        <input type="text" id="serviceShortDesc" required maxlength="160" placeholder="Короткий анонс в 1-2 предложения..." class="inp"></div>
+        <input type="text" id="serviceShortDesc" required maxlength="160" oninput="updateFormCounters()" placeholder="Короткий анонс в 1-2 предложения..." class="inp"><p class="field-counter"><span id="serviceShortDescCount">0</span>/160 символов</p></div>
       <div><label class="block text-xs text-tg-hint mb-1">Полное описание</label>
-        <textarea id="serviceDesc" rows="3" required maxlength="3000" placeholder="Подробно опишите условия..." class="inp resize-none"></textarea></div>
+        <textarea id="serviceDesc" rows="3" required maxlength="3000" oninput="updateFormCounters()" placeholder="Подробно опишите условия..." class="inp resize-none"></textarea><p class="field-counter"><span id="serviceDescCount">0</span>/3000 символов</p></div>
       <div><label class="block text-xs text-tg-hint mb-1">Фотографии (до 5 штук)</label>
         <input type="file" id="fileInput" accept="image/*" multiple onchange="handleMultiImagesUpload(event)" class="hidden">
         <button type="button" onclick="document.getElementById('fileInput').click()" class="w-full bg-tg-card text-tg-hint border border-dashed border-white/20 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2"><i class="fa-solid fa-images"></i><span id="uploadStatus">Выбрать фото с устройства</span></button>
@@ -875,6 +878,12 @@ function renderPhotos() {
   $('uploadStatus').textContent = photos.length ? `Загружено ${photos.length} из 5 фото` : "Выбрать фото с устройства";
 }
 function removePhoto(i) { photos.splice(i, 1); renderPhotos(); }
+function updateFormCounters() {
+  [['serviceName','serviceNameCount'],['serviceShortDesc','serviceShortDescCount'],['serviceDesc','serviceDescCount']].forEach(([field, counter]) => {
+    const input = $(field), output = $(counter);
+    if (input && output) output.textContent = String(input.value.length);
+  });
+}
 
 // Оптимизация: Конвертация в WebP для экономии места и трафика
 function compress(file) {
@@ -892,10 +901,23 @@ function compress(file) {
 }
 
 async function handleMultiImagesUpload(e) {
-  const files = [...e.target.files].slice(0, 5 - photos.length); if (!files.length) return;
-  $('uploadStatus').textContent = "Сжатие изображений...";
-  for (const f of files) { const d = await compress(f); if (d) photos.push(d); }
-  e.target.value = ''; renderPhotos();
+  const selected = [...(e.target.files || [])];
+  const slots = Math.max(0, 5 - photos.length);
+  if (!selected.length) return;
+  if (!slots) { showToast('Можно добавить не более 5 фотографий', 'error'); e.target.value = ''; return; }
+  const files = selected.slice(0, slots);
+  if (selected.length > slots) showToast(`Добавлены только первые ${slots} фото: лимит — 5`, 'error');
+  const valid = files.filter(f => f.type.startsWith('image/'));
+  if (valid.length !== files.length) showToast('Некоторые файлы пропущены: выберите изображения', 'error');
+  $('uploadStatus').textContent = 'Сжатие изображений…';
+  let added = 0;
+  for (const f of valid) {
+    const d = await compress(f);
+    if (d) { photos.push(d); added++; }
+  }
+  e.target.value = '';
+  renderPhotos();
+  if (valid.length && added < valid.length) showToast('Не удалось обработать некоторые фотографии', 'error');
 }
 async function uploadImg(src) {
   if (!src.startsWith('data:')) return src;
@@ -907,7 +929,7 @@ function openAddModal() {
   if (needTg()) return;
   if (!currentUser.username) return showToast("Задайте username в настройках Telegram, чтобы с вами могли связаться", "error");
   photos = []; $('serviceForm').reset(); renderPhotos();
-  $('modalTitle').textContent = "Новое объявление"; $('editServiceId').value = ""; $('customCityContainer').classList.add('hidden');
+  $('modalTitle').textContent = "Новое объявление"; $('editServiceId').value = ""; $('customCityContainer').classList.add('hidden'); updateFormCounters();
   $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack(); tg?.enableClosingConfirmation?.();
 }
 function openEditModal(id, e) {
@@ -922,7 +944,7 @@ function openEditModal(id, e) {
   $('servicePriceNum').value = s.priceNum || '';
   $('serviceShortDesc').value = s.shortDesc || s.desc || ''; $('serviceDesc').value = s.desc || '';
   $('serviceTags').value = (s.tags || []).map(t => t.replace('#', '')).join(', ');
-  photos = [...imgsOf(s)]; renderPhotos();
+  photos = [...imgsOf(s)]; renderPhotos(); updateFormCounters();
   $('serviceModal').classList.remove('hidden'); front('serviceModal'); updateBack(); tg?.enableClosingConfirmation?.();
 }
 function closeModal() { $('serviceModal').classList.add('hidden'); updateBack(); tg?.disableClosingConfirmation?.(); }
@@ -1121,7 +1143,7 @@ async function shareSeller(sid) {
 
 W({ switchTab, setCatalogIntent, openDetailModal, closeDetailModal, setGalleryImg, openSellerModal, closeSellerModal, openContact, openPhone, shareService, copyReferralLink, shareReferralLink, toggleFavorite,
   toggleServiceFeatured, toggleArchive, toggleRequestResolved, approveService, deleteService, submitReport, setSearchTag, selectCategory, clearCatalogFilters, setMyServiceFilter, goToMyService, toggleCustomCityInput, appendTagPreset, removePhoto,
-  handleMultiImagesUpload, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
+  handleMultiImagesUpload, updateFormCounters, openAddModal, openEditModal, closeModal, saveService, setAdminFilter, toggleModerationSetting, setUserVerifiedStatus, dismissReport,
   exportUsersToCSV, filterServices, renderCatalog, loadMoreServices, claimReward, resolveClaim, rateSeller, shareSeller });
 
 /* ---------- Firebase sync ---------- */
