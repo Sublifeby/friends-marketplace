@@ -1083,7 +1083,7 @@ function closeModal() { $('serviceModal').classList.add('hidden'); updateBack();
 async function saveService(e) {
   e.preventDefault(); if (needTg()) return;
   const btn = $('submitBtn'); if (btn.disabled) return;
-  // Публичный username необязателен: автор определяется по Telegram ID.
+  if (!currentUser.username) return showToast("Задайте username в настройках Telegram", "error");
   btn.disabled = true; btn.firstElementChild.textContent = "Сохранение...";
   try {
     const id = $('editServiceId').value, ex = id ? allServices.find(x => x.id === id) : null;
@@ -1103,7 +1103,7 @@ async function saveService(e) {
       shortDesc: $('serviceShortDesc').value.trim(), desc: $('serviceDesc').value.trim(), tags, images
     };
     if (ex) await updateDoc(doc(db, 'services', id), data);
-    else await addDoc(collection(db, 'services'), { ...data, views: 0, authorId: currentUser.id, authorName: currentUser.first_name || 'Участник клуба', authorUsername: currentUser.username || '',
+    else await addDoc(collection(db, 'services'), { ...data, views: 0, authorId: currentUser.id, authorName: currentUser.first_name || '', authorUsername: currentUser.username,
       authorAvatar: currentUser.photo_url || '', authorVerified: !!me?.isVerified, createdAt: Date.now(), isFeatured: false });
     showToast(pending ? "Отправлено на модерацию" : "Успешно сохранено!", "success"); haptic('medium'); closeModal();
   } catch (err) { showToast("Ошибка сохранения: " + err.message, "error"); }
