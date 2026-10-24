@@ -171,6 +171,137 @@ nav button.text-tg-accent:after{content:"";position:absolute;top:-3px;left:35%;r
 .field-counter{margin-top:.3rem;text-align:right;font-size:10px;color:var(--tg-hint,#94a3b8)}
 #serviceForm .inp:focus-visible,#searchInput:focus-visible,#citySelect:focus-visible,#listingTypeFilter:focus-visible,#sortSelect:focus-visible,#minPriceInput:focus-visible,#maxPriceInput:focus-visible{outline:2px solid rgba(45,212,191,.7);outline-offset:1px}
 #serviceForm .inp:invalid:not(:placeholder-shown){border-color:rgba(248,113,113,.65)}
+
+/* SUBLIFE adaptive theme: light mode overrides */
+body.theme-light {
+  --c-bg: #f6f8fb;
+  --c-card: #ffffff;
+  --c-text: #172b38;
+  --c-hint: #667784;
+  --c-btn: #168bd2;
+  --c-btxt: #ffffff;
+  --ui-line: #dfe6ec;
+  --ui-shadow: 0 8px 24px rgba(20, 43, 58, .07);
+  background: var(--c-bg) !important;
+  color: var(--c-text) !important;
+}
+body.theme-light header {
+  background: rgba(255,255,255,.94) !important;
+  border-bottom-color: #e2e8ee !important;
+  color: #172b38;
+}
+body.theme-light header p,
+body.theme-light .text-tg-hint,
+body.theme-light .field-counter { color: #667784 !important; }
+body.theme-light .card,
+body.theme-light #servicesList > .card {
+  background: #fff !important;
+  border-color: #e0e7ed !important;
+  box-shadow: 0 3px 14px rgba(24, 48, 64, .055);
+}
+body.theme-light .inp,
+body.theme-light .sm-inp,
+body.theme-light #searchInput,
+body.theme-light #citySelect {
+  background: #fff !important;
+  color: #172b38 !important;
+  border-color: #d7e0e7 !important;
+}
+body.theme-light .inp::placeholder,
+body.theme-light .sm-inp::placeholder,
+body.theme-light #searchInput::placeholder { color: #84929d !important; opacity: 1; }
+body.theme-light select option { background: #fff; color: #172b38; }
+body.theme-light .chip,
+body.theme-light .tagbtn {
+  background: #edf2f6;
+  color: #4d6472;
+  border-color: #e0e7ed;
+}
+body.theme-light .chip.chip-on {
+  background: #168bd2;
+  color: #fff;
+  border-color: transparent;
+}
+body.theme-light .pill {
+  background: #f0f4f7 !important;
+  color: #627582 !important;
+  border-color: #e0e7ed !important;
+}
+body.theme-light #servicesList .text-emerald-400 { color: #07845f !important; }
+body.theme-light #servicesList .text-amber-300 { color: #9a5b00 !important; }
+body.theme-light #servicesList .border-t { border-color: #e5ebf0 !important; }
+body.theme-light #servicesList .ibtn {
+  background: #f1f5f8;
+  border-color: #dfe6ec;
+  color: #526a78;
+}
+body.theme-light .club-hero {
+  background: linear-gradient(118deg, #071b2a 0%, #0b2c3d 54%, #103f4a 100%) !important;
+  border-color: rgba(41, 211, 194, .28);
+}
+body.theme-light .club-hero h2 { color: #f7fbff !important; }
+body.theme-light .club-hero p { color: #d0dee6 !important; }
+body.theme-light .club-hero .text-teal-200 { color: #a4f3e9 !important; }
+body.theme-light .club-action-secondary {
+  color: #f3fbff !important;
+  background: rgba(4,20,31,.52);
+  border-color: rgba(194,235,239,.25);
+}
+body.theme-light .club-feed-heading h2 { color: #172b38 !important; }
+body.theme-light .club-member-mark {
+  color: #087f79;
+  border-color: #b9ebe5;
+  background: #e9faf7;
+}
+body.theme-light .club-stats-strip {
+  background: linear-gradient(100deg, #f0fbf9, #fff 65%, #fff8f2);
+  border-color: #dce9ed;
+}
+body.theme-light .club-stats-note { color: #637784; }
+body.theme-light nav {
+  background: rgba(255,255,255,.97) !important;
+  border-top-color: #dfe7ed !important;
+  box-shadow: 0 -6px 24px rgba(25, 47, 61, .08) !important;
+}
+body.theme-light nav button.text-tg-hint { color: #788894 !important; }
+body.theme-light nav button.text-tg-accent {
+  color: #087f79 !important;
+  background: #e7f8f5 !important;
+  box-shadow: inset 0 0 0 1px rgba(8,127,121,.09);
+}
+body.theme-light .sheet {
+  background: #fff !important;
+  color: #172b38 !important;
+  border-color: #dfe6ec !important;
+  box-shadow: 0 -12px 50px rgba(20,43,58,.18);
+}
+body.theme-light #serviceModal .border-b { border-color: #e3e9ee !important; }
+body.theme-light #serviceForm label { color: #435a68; }
+body.theme-light #serviceForm .bg-tg-card,
+body.theme-light #serviceForm button.bg-tg-card {
+  background: #f0f4f7 !important;
+  color: #526a78 !important;
+}
+body.theme-light .modal { background: rgba(15, 31, 42, .48); }
+body.theme-light #referralLinkInput { color: #526a78 !important; }
+body.theme-light #clearCatalogFilters { background: #e8f8f5; }
+body.theme-light .club-eyebrow,
+body.theme-light #totalOffersCount { color: #078b83 !important; }
+body.theme-light .service-placeholder { color: #078b83; }
+body.theme-light .service-placeholder .placeholder-icon {
+  background: #e7f8f5;
+  border-color: #c8eee8;
+}
+body.theme-light .bg-tg-bg\/80 { background: #f2f6f8 !important; }
+body.theme-light .border-white\/5,
+body.theme-light .border-white\/10 { border-color: #e1e8ed !important; }
+body.theme-light .text-red-400 { color: #c43c43 !important; }
+body.theme-light .text-amber-400 { color: #986000 !important; }
+body.theme-light .bg-black\/70 { background: rgba(23,43,56,.82) !important; }
+@media (prefers-reduced-motion: reduce) {
+  body.theme-light *, body.theme-light *::before, body.theme-light *::after { transition-duration: .01ms !important; }
+}
+
 </style>
 </head>
 <body>
@@ -1243,5 +1374,32 @@ switchTab('catalog');
 csLoadFavs();
 initRealtimeSync();
 </script>
+
+<script>
+(function () {
+  function syncSublifeTheme() {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    var scheme = tg && tg.colorScheme;
+    if (scheme !== 'light' && scheme !== 'dark') {
+      scheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    document.body.classList.toggle('theme-light', scheme === 'light');
+    document.body.classList.toggle('theme-dark', scheme !== 'light');
+    document.documentElement.style.colorScheme = scheme;
+  }
+  syncSublifeTheme();
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.onEvent('themeChanged', syncSublifeTheme);
+  }
+  if (window.matchMedia) {
+    var media = window.matchMedia('(prefers-color-scheme: light)');
+    if (media.addEventListener) media.addEventListener('change', function () {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg || !tg.colorScheme) syncSublifeTheme();
+    });
+  }
+})();
+</script>
+
 </body>
 </html>
